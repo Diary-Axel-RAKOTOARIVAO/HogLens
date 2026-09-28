@@ -119,3 +119,18 @@ class AppUpdate {
   final String url;
   final String notes;
 }
+
+/// Home-card numbers: unique visitors per day for the last 7 days (last is
+/// today) and the deduplicated 7-day total.
+@immutable
+class Glance {
+  const Glance({required this.daily, required this.week});
+  final List<num> daily;
+  final num week;
+
+  num get today => daily.isEmpty ? 0 : daily.last;
+
+  Map<String, dynamic> toJson() => {'d': daily, 'w': week};
+  factory Glance.fromJson(Map<String, dynamic> j) =>
+      Glance(daily: (j['d'] as List).cast<num>(), week: j['w'] as num);
+}

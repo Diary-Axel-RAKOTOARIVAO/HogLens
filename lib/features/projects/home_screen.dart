@@ -133,8 +133,8 @@ class _Overview extends ConsumerWidget {
       final g = ref.watch(glanceProvider(p.id)).value;
       if (g == null) continue;
       loaded++;
-      today += g.isEmpty ? 0 : g.last;
-      week += g.fold<num>(0, (a, b) => a + b);
+      today += g.today;
+      week += g.week;
     }
     final update = ref.watch(updateCheckProvider).value;
     return Column(
@@ -178,7 +178,7 @@ class _Overview extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('TODAY, ALL PROJECTS', style: Theme.of(context).textTheme.labelSmall),
+                    Text('VISITORS TODAY', style: Theme.of(context).textTheme.labelSmall),
                     const SizedBox(height: 6),
                     loaded == 0 ? const Skeleton(width: 80, height: 26) : AnimatedBigValue(today, format: Fmt.compact, size: 26),
                   ],
@@ -188,7 +188,7 @@ class _Overview extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('LAST 7 DAYS', style: Theme.of(context).textTheme.labelSmall),
+                    Text('UNIQUE, 7 DAYS', style: Theme.of(context).textTheme.labelSmall),
                     const SizedBox(height: 6),
                     loaded == 0 ? const Skeleton(width: 80, height: 26) : AnimatedBigValue(week, format: Fmt.compact, size: 26),
                   ],
@@ -246,11 +246,11 @@ class _ProjectCard extends ConsumerWidget {
               data: (v) => Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  AnimatedBigValue(v.isEmpty ? 0 : v.last, format: Fmt.compact, size: 24),
+                  AnimatedBigValue(v.today, format: Fmt.compact, size: 24),
                   const SizedBox(height: 2),
-                  Text('events today', style: TextStyle(color: c.textMuted, fontSize: 13)),
+                  Text('visitors today', style: TextStyle(color: c.textMuted, fontSize: 13)),
                   const SizedBox(height: 8),
-                  MiniBars(values: v, color: project.accent, height: 22, gap: 3),
+                  MiniBars(values: v.daily, color: project.accent, height: 22, gap: 3),
                 ],
               ),
               loading: () => const Column(

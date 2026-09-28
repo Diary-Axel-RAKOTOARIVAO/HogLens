@@ -13,7 +13,7 @@ A clean, native-feeling PostHog companion for iOS and Android, built with Flutte
 - Errors screen grouping `$exception` events by type and message with counts, people affected and a trend.
 - Tap a top event to see its trend, reach, top pages and browsers over the window.
 - Feature flags list per project.
-- Home screen totals across all projects and an update banner when a newer GitHub release exists.
+- Home screen visitor totals across all projects and an update banner when a newer GitHub release exists.
 - Light and dark themes follow the system.
 - A demo project with fake data lets you explore without a key.
 

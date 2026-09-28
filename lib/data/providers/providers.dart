@@ -182,51 +182,63 @@ class KeyStatsNotifier extends AsyncNotifier<KeyStats> {
 
 final keyStatsProvider = AsyncNotifierProvider.family<KeyStatsNotifier, KeyStats, String>(KeyStatsNotifier.new);
 
-/// Daily event counts for the last 7 days (last element is today), used by
-/// the project cards on the home screen. One query per project.
-class GlanceNotifier extends AsyncNotifier<List<num>> {
+/// Unique visitors per day for the last 7 days plus the 7-day unique total,
+/// used by the project cards and the home totals. Two queries per project.
+class GlanceNotifier extends AsyncNotifier<Glance> {
   GlanceNotifier(this.projectId);
   final String projectId;
 
   @override
-  Future<List<num>> build() async {
+  Future<Glance> build() async {
     final project = ref.watch(projectProvider(projectId));
-    if (project == null) return const [];
-    return _cached<List<num>>(
+    if (project == null) return const Glance(daily: [], week: 0);
+    return _cached<Glance>(
       emit: (v) => state = AsyncData(v),
       cache: ref.read(cacheProvider),
       key: 'glance_$projectId',
-      decode: (d, _) => (d['v'] as List).cast<num>(),
-      encode: (v) => {'v': v},
+      decode: (d, _) => Glance.fromJson(d),
+      encode: (v) => v.toJson(),
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
-        final r = await client.query(
-          project.projectId,
-          'SELECT toStartOfDay(timestamp) AS d, count() FROM events '
-          'WHERE timestamp >= toStartOfDay(now()) - INTERVAL 6 DAY AND timestamp <= now() '
-          'GROUP BY d ORDER BY d',
-          name: 'hoglens_glance',
-        );
+        const isView = "event IN ('\$pageview', '\$screen')";
+        const window = 'timestamp >= toStartOfDay(now()) - INTERVAL 6 DAY AND timestamp <= now()';
+        final results = await Future.wait([
+          client.query(
+            project.projectId,
+            'SELECT toStartOfDay(timestamp) AS d, uniq(person_id) FROM events '
+            'WHERE $isView AND $window GROUP BY d ORDER BY d',
+            name: 'hoglens_glance',
+          ),
+          client.query(
+            project.projectId,
+            'SELECT uniq(person_id) FROM events WHERE $isView AND $window',
+            name: 'hoglens_glance_week',
+          ),
+        ]);
         final pts = <SeriesPoint>[];
-        for (final row in r.rows) {
+        for (final row in results[0].rows) {
           final t = DateTime.tryParse('${row[0]}')?.toLocal();
           final v = row.length > 1 ? row[1] : 0;
           if (t != null) pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
         }
         final now = DateTime.now();
-        final window = StatRange(
+        final range = StatRange(
           start: DateTime(now.year, now.month, now.day - 6),
           end: now,
           label: '7d',
           kind: RangeKind.week,
         );
-        return StatsRepository.fill(pts, window).map((p) => p.v).toList();
+        final w = results[1].firstCell;
+        return Glance(
+          daily: StatsRepository.fill(pts, range).map((p) => p.v).toList(),
+          week: w is num ? w : num.tryParse('$w') ?? 0,
+        );
       },
     );
   }
 }
 
-final glanceProvider = AsyncNotifierProvider.family<GlanceNotifier, List<num>, String>(GlanceNotifier.new);
+final glanceProvider = AsyncNotifierProvider.family<GlanceNotifier, Glance, String>(GlanceNotifier.new);
 
 class FlagsNotifier extends AsyncNotifier<List<FeatureFlag>> {
   FlagsNotifier(this.projectId);

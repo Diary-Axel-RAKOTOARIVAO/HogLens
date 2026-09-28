@@ -21,10 +21,13 @@ class DemoClient implements PhApi {
 
     if (name == 'hoglens_glance') {
       final today = DateTime(now.year, now.month, now.day);
-      return QueryResult(columns: const ['d', 'count'], rows: [
+      return QueryResult(columns: const ['d', 'visitors'], rows: [
         for (var i = 6; i >= 0; i--)
-          [today.subtract(Duration(days: i)).toIso8601String(), i == 0 ? 6314 : 5200 + ((i * 1373) % 2900)],
+          [today.subtract(Duration(days: i)).toIso8601String(), i == 0 ? 412 : 380 + ((i * 97) % 190)],
       ]);
+    }
+    if (name == 'hoglens_glance_week') {
+      return const QueryResult(columns: ['visitors'], rows: [[2980]]);
     }
     if (name == 'hoglens_hourly') {
       final rows = <List<dynamic>>[];
