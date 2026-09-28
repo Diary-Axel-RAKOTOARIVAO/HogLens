@@ -123,43 +123,55 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: IconCircleButton(icon: SolarIconsOutline.altArrowLeft, onTap: () => context.pop()),
                 ),
               ),
-              titleSpacing: 8,
-              title: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => _showProjectMenu(context, project),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ProjectAvatar(project: project, size: 40),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(child: Text(project.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
-                                const SizedBox(width: 4),
-                                Icon(SolarIconsOutline.altArrowDown, size: 16, color: c.textMuted),
-                              ],
-                            ),
-                            Text(
-                              '${project.hostLabel} · #${project.projectId}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textMuted),
-                            ),
-                          ],
+              actions: [
+                InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _showProjectMenu(context, project),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 240),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(SolarIconsOutline.altArrowDown, size: 16, color: c.textMuted),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      project.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.right,
+                                      style: Theme.of(context).appBarTheme.titleTextStyle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                '${project.hostLabel} · #${project.projectId}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textMuted),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        ProjectAvatar(project: project, size: 44),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: Spacing.page - 6),
+              ],
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(Spacing.page, 8, Spacing.page, 110),
