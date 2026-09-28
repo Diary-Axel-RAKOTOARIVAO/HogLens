@@ -5,6 +5,11 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-28
+
+### Changed
+- The project logo and name sit on the right of the dashboard header, opposite the back button.
+
 ## [0.4.0] - 2026-09-28
 
 ### Changed
