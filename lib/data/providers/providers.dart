@@ -1,0 +1,219 @@
+import 'dart:io';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+
+import '../api/demo_client.dart';
+import '../api/posthog_client.dart';
+import '../api/stats_repository.dart';
+import '../models/project.dart';
+import '../models/stats.dart';
+import '../models/widget_spec.dart';
+import '../storage/project_store.dart';
+
+/// Opened once in main() and overridden into the ProviderScope.
+final storeProvider = Provider<ProjectStore>((ref) => throw UnimplementedError());
+
+// ---- projects -----------------------------------------------------------
+
+class ProjectsNotifier extends Notifier<List<PhProject>> {
+  @override
+  List<PhProject> build() => ref.read(storeProvider).loadProjects();
+
+  ProjectStore get _store => ref.read(storeProvider);
+
+  Future<PhProject> add({
+    required String name,
+    required String host,
+    required int projectId,
+    required String apiKey,
+    File? logo,
+    int accentIndex = 0,
+  }) async {
+    final id = const Uuid().v4();
+    await _store.writeKey(id, apiKey);
+    String? logoPath;
+    if (logo != null) logoPath = await _store.storeLogo(id, logo);
+    final p = PhProject(
+      id: id,
+      name: name,
+      host: host,
+      projectId: projectId,
+      logoPath: logoPath,
+      accentIndex: accentIndex,
+      createdAt: DateTime.now(),
+    );
+    state = [...state, p];
+    await _store.saveProjects(state);
+    return p;
+  }
+
+  Future<void> update(PhProject updated, {File? newLogo, bool removeLogo = false, String? newKey}) async {
+    var p = updated;
+    if (removeLogo) {
+      await _store.deleteLogo(p.logoPath);
+      p = p.copyWith(clearLogo: true);
+    } else if (newLogo != null) {
+      await _store.deleteLogo(p.logoPath);
+      p = p.copyWith(logoPath: await _store.storeLogo(p.id, newLogo));
+    }
+    if (newKey != null && newKey.isNotEmpty) {
+      await _store.writeKey(p.id, newKey);
+      ref.invalidate(apiKeyProvider(p.id));
+    }
+    state = [for (final x in state) x.id == p.id ? p : x];
+    await _store.saveProjects(state);
+  }
+
+  Future<void> remove(String id) async {
+    final p = state.where((x) => x.id == id).firstOrNull;
+    await _store.deleteKey(id);
+    await _store.deleteLogo(p?.logoPath);
+    state = state.where((x) => x.id != id).toList();
+    await _store.saveProjects(state);
+    await ref.read(widgetsProvider.notifier).removeProject(id);
+  }
+
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    final list = [...state];
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex, item);
+    state = list;
+    await _store.saveProjects(state);
+  }
+}
+
+final projectsProvider = NotifierProvider<ProjectsNotifier, List<PhProject>>(ProjectsNotifier.new);
+
+final projectProvider = Provider.family<PhProject?, String>((ref, id) {
+  return ref.watch(projectsProvider).where((p) => p.id == id).firstOrNull;
+});
+
+final apiKeyProvider = FutureProvider.family<String, String>((ref, projectId) async {
+  final key = await ref.watch(storeProvider).readKey(projectId);
+  if (key == null || key.isEmpty) throw PosthogException('No API key stored for this project.');
+  return key;
+});
+
+final clientProvider = FutureProvider.family<PhApi, String>((ref, projectId) async {
+  final project = ref.watch(projectProvider(projectId));
+  if (project == null) throw PosthogException('Project removed.');
+  if (project.isDemo) return DemoClient();
+  final key = await ref.watch(apiKeyProvider(projectId).future);
+  return PosthogClient(host: project.host, apiKey: key);
+});
+
+// ---- range & stats ------------------------------------------------------
+
+class RangeNotifier extends Notifier<StatRange> {
+  @override
+  StatRange build() => StatRange.week;
+  void set(StatRange r) => state = r;
+}
+
+final rangeProvider = NotifierProvider<RangeNotifier, StatRange>(RangeNotifier.new);
+
+final keyStatsProvider = FutureProvider.family<KeyStats, String>((ref, projectId) async {
+  final project = ref.watch(projectProvider(projectId));
+  if (project == null) throw PosthogException('Project removed.');
+  final client = await ref.watch(clientProvider(projectId).future);
+  final range = ref.watch(rangeProvider);
+  return StatsRepository(client, project.projectId).fetch(range);
+});
+
+/// Daily event counts for the last 7 days (last element is today), used by
+/// the project cards on the home screen. One query per project.
+final glanceProvider = FutureProvider.family<List<num>, String>((ref, projectId) async {
+  final project = ref.watch(projectProvider(projectId));
+  if (project == null) return const [];
+  final client = await ref.watch(clientProvider(projectId).future);
+  final r = await client.query(
+    project.projectId,
+    'SELECT toStartOfDay(timestamp) AS d, count() FROM events '
+    'WHERE timestamp >= toStartOfDay(now()) - INTERVAL 6 DAY AND timestamp <= now() '
+    'GROUP BY d ORDER BY d',
+    name: 'hoglens_glance',
+  );
+  final pts = <SeriesPoint>[];
+  for (final row in r.rows) {
+    final t = DateTime.tryParse('${row[0]}')?.toLocal();
+    final v = row.length > 1 ? row[1] : 0;
+    if (t != null) pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
+  }
+  return StatsRepository.fill(pts, StatRange.week).map((p) => p.v).toList();
+});
+
+final flagsProvider = FutureProvider.family<List<FeatureFlag>, String>((ref, projectId) async {
+  final project = ref.watch(projectProvider(projectId));
+  if (project == null) throw PosthogException('Project removed.');
+  final client = await ref.watch(clientProvider(projectId).future);
+  return client.listFlags(project.projectId);
+});
+
+// ---- custom widgets -----------------------------------------------------
+
+class WidgetsNotifier extends Notifier<Map<String, List<StatWidgetSpec>>> {
+  @override
+  Map<String, List<StatWidgetSpec>> build() => ref.read(storeProvider).loadWidgets();
+
+  List<StatWidgetSpec> forProject(String projectId) => state[projectId] ?? const [];
+
+  Future<void> _persist() => ref.read(storeProvider).saveWidgets(state);
+
+  Future<StatWidgetSpec> add(String projectId, StatWidgetSpec spec) async {
+    state = {...state, projectId: [...forProject(projectId), spec]};
+    await _persist();
+    return spec;
+  }
+
+  Future<void> update(String projectId, StatWidgetSpec spec) async {
+    state = {
+      ...state,
+      projectId: [for (final w in forProject(projectId)) w.id == spec.id ? spec : w],
+    };
+    await _persist();
+    ref.invalidate(widgetResultProvider((projectId, spec.id)));
+  }
+
+  Future<void> remove(String projectId, String widgetId) async {
+    state = {...state, projectId: forProject(projectId).where((w) => w.id != widgetId).toList()};
+    await _persist();
+  }
+
+  Future<void> reorder(String projectId, int oldIndex, int newIndex) async {
+    final list = [...forProject(projectId)];
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex, item);
+    state = {...state, projectId: list};
+    await _persist();
+  }
+
+  Future<void> removeProject(String projectId) async {
+    final next = {...state}..remove(projectId);
+    state = next;
+    await _persist();
+  }
+}
+
+final widgetsProvider =
+    NotifierProvider<WidgetsNotifier, Map<String, List<StatWidgetSpec>>>(WidgetsNotifier.new);
+
+final projectWidgetsProvider = Provider.family<List<StatWidgetSpec>, String>(
+  (ref, projectId) => ref.watch(widgetsProvider)[projectId] ?? const [],
+);
+
+typedef CustomWidgetKey = (String projectId, String widgetId);
+
+final widgetResultProvider = FutureProvider.family<QueryResult, CustomWidgetKey>((ref, key) async {
+  final (projectId, widgetId) = key;
+  final project = ref.watch(projectProvider(projectId));
+  // Select only this widget's spec so adding or reordering siblings does not
+  // refetch every widget (the API allows 3 concurrent queries).
+  final spec = ref.watch(
+    projectWidgetsProvider(projectId).select((l) => l.where((w) => w.id == widgetId).firstOrNull),
+  );
+  if (project == null || spec == null) throw PosthogException('Widget removed.');
+  final client = await ref.watch(clientProvider(projectId).future);
+  final range = ref.watch(rangeProvider);
+  return client.query(project.projectId, StatsRepository.resolve(spec.hogql, range), name: 'hoglens_widget');
+});
