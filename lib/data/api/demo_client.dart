@@ -38,6 +38,14 @@ class DemoClient implements PhApi {
       }
       return QueryResult(columns: const ['bucket', 'count'], rows: rows);
     }
+    if (name == 'hoglens_geo') {
+      return const QueryResult(columns: ['cc', 'name', 'visitors', 'events'], rows: [
+        ['MG', 'Madagascar', 4749, 86132], ['FR', 'France', 610, 4120], ['US', 'United States', 142, 354],
+        ['MU', 'Mauritius', 120, 980], ['DE', 'Germany', 66, 200], ['RE', 'Réunion', 60, 410],
+        ['CN', 'China', 58, 94], ['GB', 'United Kingdom', 34, 101], ['CA', 'Canada', 22, 60],
+        ['BR', 'Brazil', 16, 40], ['IN', 'India', 14, 30], ['AU', 'Australia', 9, 20],
+      ]);
+    }
     if (name == 'hoglens_live') {
       return QueryResult(columns: const ['event', 'distinct_id', 'timestamp', 'path', 'browser', 'os'], rows: [
         for (var i = 0; i < 40; i++)
@@ -134,6 +142,52 @@ class DemoClient implements PhApi {
       ]);
     }
     return QueryResult(columns: const ['count'], rows: [[120 + _rng.nextInt(2400)]]);
+  }
+
+  @override
+  Future<List<dynamic>> insight(int projectId, Map<String, dynamic> query, {String? name}) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final now = DateTime.now();
+    switch (query['kind']) {
+      case 'LifecycleQuery':
+        final days = [for (var i = 13; i >= 0; i--) DateTime(now.year, now.month, now.day - i)];
+        List<dynamic> series(String status, int base, double spread) => [
+              for (var i = 0; i < days.length; i++) (base + spread * base * ((i * 37) % 10 - 5) / 10).round(),
+            ];
+        return [
+          for (final (status, base, spread) in [('new', 180, 0.5), ('returning', 420, 0.3), ('resurrecting', 90, 0.6), ('dormant', 150, 0.5)])
+            {
+              'status': status,
+              'label': '\$pageview - $status',
+              'data': series(status, base, spread),
+              'days': days.map((d) => d.toIso8601String().substring(0, 10)).toList(),
+            },
+        ];
+      case 'RetentionQuery':
+        return [
+          for (var c = 0; c < 7; c++)
+            {
+              'date': now.subtract(Duration(days: 7 * (6 - c))).toUtc().toIso8601String(),
+              'values': [
+                for (var w = 0; w < 7 - c; w++) {'count': w == 0 ? 1800 + c * 120 : ((1800 + c * 120) * (0.42 / (w + 0.2)) * (0.9 + (c * 13 % 7) / 35)).round()},
+              ],
+            },
+        ];
+      case 'PathsQuery':
+        return [
+          {'source': '1_https://app.example.com/', 'target': '2_https://app.example.com/recherche', 'value': 640},
+          {'source': '1_https://app.example.com/', 'target': '2_https://app.example.com/login', 'value': 210},
+          {'source': '1_https://app.example.com/pricing', 'target': '2_https://app.example.com/register', 'value': 120},
+          {'source': '2_https://app.example.com/recherche', 'target': '3_https://app.example.com/listing/1182', 'value': 410},
+          {'source': '2_https://app.example.com/recherche', 'target': '3_https://app.example.com/recherche?city=x', 'value': 150},
+          {'source': '2_https://app.example.com/login', 'target': '3_https://app.example.com/profil', 'value': 160},
+          {'source': '2_https://app.example.com/register', 'target': '3_https://app.example.com/profil', 'value': 90},
+          {'source': '3_https://app.example.com/listing/1182', 'target': '4_https://app.example.com/booking', 'value': 230},
+          {'source': '3_https://app.example.com/listing/1182', 'target': '4_https://app.example.com/contact', 'value': 110},
+          {'source': '3_https://app.example.com/profil', 'target': '4_https://app.example.com/favoris', 'value': 140},
+        ];
+    }
+    return const [];
   }
 
   @override

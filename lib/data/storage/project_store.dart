@@ -19,6 +19,12 @@ class ProjectStore {
   /// Shared preferences for small app-level flags.
   SharedPreferences get prefs => _prefs;
 
+  static const _widgetProjectKey = 'hoglens.widgetProject';
+
+  /// Project shown on the Android home-screen widget (first project if unset).
+  String? get widgetProjectId => _prefs.getString(_widgetProjectKey) ?? loadProjects().firstOrNull?.id;
+  Future<void> setWidgetProjectId(String id) => _prefs.setString(_widgetProjectKey, id);
+
   static const _projectsKey = 'ph.projects.v1';
   static const _widgetsKey = 'ph.widgets.v1';
   static String _keyFor(String id) => 'ph.apikey.$id';

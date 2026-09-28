@@ -8,6 +8,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoglens/data/api/behavior_repository.dart';
+import 'package:hoglens/data/models/insights.dart';
 import 'package:hoglens/data/api/insights_repository.dart';
 import 'package:hoglens/data/api/posthog_client.dart';
 import 'package:hoglens/data/api/stats_repository.dart';
@@ -72,6 +74,22 @@ void main() {
         final drill = await repo.drill('\$pageview', r);
         print('drill → count ${drill.count}, people ${drill.people}, series ${drill.series.length}, paths ${drill.topPaths.take(3)}, browsers ${drill.topBrowsers.take(2)}');
         expect(drill.series.length, r.bucketCount);
+      }, timeout: slow);
+
+      test('lifecycle, retention, paths, countries', () async {
+        final repo = BehaviorRepository(client, id);
+        final r = RangeSelection.week.resolve(DateTime.now());
+        final lc = await repo.lifecycle(r);
+        print('lifecycle → days ${lc.days.length}, ${LifecycleReport.statuses.map((s) => '$s=${lc.total(s)}').join(' ')}');
+        expect(lc.series.keys, containsAll(LifecycleReport.statuses));
+        final rt = await repo.retention();
+        print('retention → cohorts ${rt.cohorts.length}, first size ${rt.cohorts.firstOrNull?.size}, w1 ${rt.cohorts.firstOrNull?.rate(1)}');
+        expect(rt.cohorts, isNotEmpty);
+        final pt = await repo.paths(r);
+        print('paths → ${pt.links.length} links, top ${pt.links.take(3).map((l) => '${l.fromStep}:${l.from}→${l.to}=${l.value}').join(' | ')}');
+        final geo = await repo.countries(r);
+        print('geo → ${geo.countries.length} countries, top ${geo.countries.take(3).map((c) => '${c.flag} ${c.name} ${c.visitors}').join(', ')}');
+        expect(geo.countries, isNotEmpty);
       }, timeout: slow);
 
       test('flags', () async {

@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/providers/providers.dart';
+import '../../home_widget/home_widget_service.dart';
 import '../../shared/ui.dart';
 import 'add_project_screen.dart';
 
@@ -165,6 +167,57 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
             style: const TextStyle(fontFamily: 'Menlo', fontSize: 14),
             decoration: const InputDecoration(hintText: 'Replace API key (optional)'),
           ),
+          if (HomeWidgetService.supported) ...[
+            const SizedBox(height: 24),
+            Text('HOME SCREEN WIDGET', style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 8),
+            Card1(
+              radius: Radii.tile,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Show this project on the widget', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text('Visitors today and the last seven days, refreshed every 30 minutes.',
+                                style: TextStyle(fontSize: 12.5, color: c.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: ref.watch(storeProvider).widgetProjectId == p.id,
+                        activeTrackColor: c.text,
+                        onChanged: (v) async {
+                          if (!v) return;
+                          await ref.read(storeProvider).setWidgetProjectId(p.id);
+                          final g = ref.read(glanceProvider(p.id)).value;
+                          if (g != null) await HomeWidgetService.push(p, g);
+                          setState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final ok = await HomeWidget.isRequestPinWidgetSupported() ?? false;
+                      if (!ok) {
+                        if (context.mounted) showToast(context, 'Long-press your home screen to add the HogLens widget.');
+                        return;
+                      }
+                      await HomeWidget.requestPinWidget(name: 'HogLensWidgetProvider', androidName: 'HogLensWidgetProvider');
+                    },
+                    icon: const Icon(SolarIconsOutline.widgetAdd, size: 18),
+                    label: const Text('Add to home screen'),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 32),
           FilledButton(
             onPressed: _busy ? null : _save,

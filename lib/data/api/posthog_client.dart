@@ -18,6 +18,11 @@ abstract class PhApi {
   Future<List<RemoteProject>> listProjects();
   Future<RemoteProject> getProject(int projectId);
   Future<QueryResult> query(int projectId, String hogql, {String? name});
+
+  /// Runs a PostHog insight query (Lifecycle, Retention, Paths, Trends…)
+  /// and returns its `results`. These are computed and cached server-side,
+  /// which beats any HogQL we could write by hand for the same questions.
+  Future<List<dynamic>> insight(int projectId, Map<String, dynamic> query, {String? name});
   Future<List<FeatureFlag>> listFlags(int projectId);
 }
 
@@ -93,6 +98,20 @@ class PosthogClient implements PhApi {
           .map((r) => (r as List).cast<dynamic>())
           .toList();
       return QueryResult(columns: cols, rows: rows);
+    } finally {
+      _slots.release();
+    }
+  }
+
+  @override
+  Future<List<dynamic>> insight(int projectId, Map<String, dynamic> query, {String? name}) async {
+    await _slots.acquire();
+    try {
+      final res = await _guard(() => _dio.post(
+            '/api/projects/$projectId/query/',
+            data: {'query': query, 'refresh': 'blocking', 'name': ?name},
+          ));
+      return ((res.data as Map)['results'] as List?) ?? const [];
     } finally {
       _slots.release();
     }

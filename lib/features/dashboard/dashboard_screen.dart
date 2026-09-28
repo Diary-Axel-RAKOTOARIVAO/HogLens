@@ -80,6 +80,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 8),
               _MenuRow(
+                icon: SolarIconsOutline.usersGroupRounded,
+                label: 'Behavior · lifecycle, retention, paths',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/p/${project.id}/behavior');
+                },
+              ),
+              const SizedBox(height: 8),
+              _MenuRow(
+                icon: SolarIconsOutline.global,
+                label: 'Worldwide',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/p/${project.id}/world');
+                },
+              ),
+              const SizedBox(height: 8),
+              _MenuRow(
                 icon: SolarIconsOutline.dangerTriangle,
                 label: 'Errors',
                 onTap: () {

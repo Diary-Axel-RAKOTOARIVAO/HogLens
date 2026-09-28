@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../api/behavior_repository.dart';
 import '../api/demo_client.dart';
 import '../api/insights_repository.dart';
 import '../api/posthog_client.dart';
@@ -15,6 +16,7 @@ import '../models/insights.dart';
 import '../models/project.dart';
 import '../models/stats.dart';
 import '../models/widget_spec.dart';
+import '../../home_widget/home_widget_service.dart';
 import '../storage/cache_store.dart';
 import '../storage/project_store.dart';
 
@@ -229,10 +231,14 @@ class GlanceNotifier extends AsyncNotifier<Glance> {
           kind: RangeKind.week,
         );
         final w = results[1].firstCell;
-        return Glance(
+        final glance = Glance(
           daily: StatsRepository.fill(pts, range).map((p) => p.v).toList(),
           week: w is num ? w : num.tryParse('$w') ?? 0,
         );
+        if (ref.read(storeProvider).widgetProjectId == projectId) {
+          unawaited(HomeWidgetService.push(project, glance));
+        }
+        return glance;
       },
     );
   }
@@ -461,3 +467,104 @@ bool _isNewer(String a, String b) {
   }
   return false;
 }
+
+// ---- behavior & geography --------------------------------------------------
+
+class LifecycleNotifier extends AsyncNotifier<LifecycleReport> {
+  LifecycleNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<LifecycleReport> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    final range = currentRange(ref);
+    return _cached<LifecycleReport>(
+      emit: (v) => state = AsyncData(v),
+      cache: ref.read(cacheProvider),
+      key: 'lifecycle_${projectId}_${range.cacheKey}',
+      decode: (d, _) => LifecycleReport.fromJson(d),
+      encode: (v) => v.toJson(),
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return BehaviorRepository(client, project.projectId).lifecycle(range);
+      },
+    );
+  }
+}
+
+final lifecycleProvider = AsyncNotifierProvider.family<LifecycleNotifier, LifecycleReport, String>(LifecycleNotifier.new);
+
+class RetentionNotifier extends AsyncNotifier<RetentionReport> {
+  RetentionNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<RetentionReport> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    return _cached<RetentionReport>(
+      emit: (v) => state = AsyncData(v),
+      cache: ref.read(cacheProvider),
+      key: 'retention_$projectId',
+      decode: (d, _) => RetentionReport.fromJson(d),
+      encode: (v) => v.toJson(),
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return BehaviorRepository(client, project.projectId).retention();
+      },
+    );
+  }
+}
+
+final retentionProvider = AsyncNotifierProvider.family<RetentionNotifier, RetentionReport, String>(RetentionNotifier.new);
+
+class PathsNotifier extends AsyncNotifier<PathsReport> {
+  PathsNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<PathsReport> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    final range = currentRange(ref);
+    return _cached<PathsReport>(
+      emit: (v) => state = AsyncData(v),
+      cache: ref.read(cacheProvider),
+      key: 'paths_${projectId}_${range.cacheKey}',
+      decode: (d, _) => PathsReport.fromJson(d),
+      encode: (v) => v.toJson(),
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return BehaviorRepository(client, project.projectId).paths(range);
+      },
+    );
+  }
+}
+
+final pathsProvider = AsyncNotifierProvider.family<PathsNotifier, PathsReport, String>(PathsNotifier.new);
+
+class GeoNotifier extends AsyncNotifier<GeoReport> {
+  GeoNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<GeoReport> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    final range = currentRange(ref);
+    return _cached<GeoReport>(
+      emit: (v) => state = AsyncData(v),
+      cache: ref.read(cacheProvider),
+      key: 'geo_${projectId}_${range.cacheKey}',
+      decode: (d, _) => GeoReport.fromJson(d),
+      encode: (v) => v.toJson(),
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return BehaviorRepository(client, project.projectId).countries(range);
+      },
+    );
+  }
+}
+
+final geoProvider = AsyncNotifierProvider.family<GeoNotifier, GeoReport, String>(GeoNotifier.new);

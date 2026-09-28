@@ -91,11 +91,10 @@ class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> {
               ),
               data: (events) => events.isEmpty
                   ? const EmptyState(icon: SolarIconsOutline.pulse, title: 'Nothing yet', message: 'No matching events in the last 24 hours.')
-                  : ListView.separated(
+                  : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 40),
                       itemCount: events.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemBuilder: (context, i) => _EventRow(e: events[i], accent: accent)
+                      itemBuilder: (context, i) => _EventRow(e: events[i], accent: accent, last: i == events.length - 1)
                           .animate(key: ValueKey('${events[i].at.millisecondsSinceEpoch}${events[i].event}'))
                           .fadeIn(duration: 250.ms),
                     ),
@@ -108,58 +107,81 @@ class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> {
 }
 
 class _EventRow extends StatelessWidget {
-  const _EventRow({required this.e, required this.accent});
+  const _EventRow({required this.e, required this.accent, this.last = false});
   final LiveEvent e;
   final Color accent;
+  final bool last;
+
+  (IconData, Color?) _style(AppColors c) {
+    final n = e.event.toLowerCase();
+    if (n == r'$exception') return (SolarIconsOutline.dangerTriangle, c.negative);
+    if (n == r'$pageview' || n == r'$screen') return (SolarIconsOutline.eye, null);
+    if (n == r'$pageleave') return (SolarIconsOutline.logout, null);
+    if (n == r'$autocapture' || n == r'$rageclick') return (SolarIconsOutline.cursor, null);
+    if (n == r'$feature_flag_called') return (SolarIconsOutline.flag, null);
+    if (n == r'$identify' || n.contains('sign') || n.contains('register')) return (SolarIconsOutline.userCheck, c.positive);
+    if (n.contains('purchase') || n.contains('booking') || n.contains('order') || n.contains('pay')) return (SolarIconsOutline.cart, accent);
+    if (n.contains('search')) return (Icons.search, null);
+    return (SolarIconsOutline.bolt, accent);
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final (icon, tint) = _style(c);
     final system = e.event.startsWith(r'$');
-    final isError = e.event == r'$exception';
-    return Card1(
-      radius: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: (isError ? c.negative : accent).withValues(alpha: system ? 0.10 : 0.16),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(
-              isError ? SolarIconsOutline.dangerTriangle : (system ? SolarIconsOutline.cursor : SolarIconsOutline.bolt),
-              size: 18,
-              color: isError ? c.negative : accent,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          SizedBox(
+            width: 44,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(e.event, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
-                const SizedBox(height: 2),
-                Text(
-                  [if (e.path != null && e.path!.isNotEmpty) e.path!, if (e.browser != null) '${e.browser}${e.os != null ? ' · ${e.os}' : ''}'].join('  ·  '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: c.textMuted),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: tint == null ? c.surface : tint.withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 17, color: tint ?? (system ? c.textMuted : c.text)),
                 ),
+                if (!last) Expanded(child: Container(width: 2, margin: const EdgeInsets.symmetric(vertical: 4), color: c.border)),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(Fmt.relative(e.at), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.text)),
-              const SizedBox(height: 2),
-              Text(e.distinctId.length > 10 ? '${e.distinctId.substring(0, 8)}…' : e.distinctId,
-                  style: TextStyle(fontSize: 11, color: c.textFaint, fontFamily: 'Menlo')),
-            ],
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6, bottom: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(e.event, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(Fmt.relative(e.at), style: TextStyle(fontSize: 12, color: c.textMuted)),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(e.distinctId, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.5, color: c.textMuted, fontFamily: 'Menlo')),
+                  if ((e.path != null && e.path!.isNotEmpty) || e.browser != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      [if (e.path != null && e.path!.isNotEmpty) e.path!, if (e.browser != null) '${e.browser}${e.os != null ? ' · ${e.os}' : ''}'].join('  ·  '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: c.textFaint),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ],
       ),

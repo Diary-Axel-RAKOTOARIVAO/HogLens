@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/theme/app_theme.dart';
+import 'features/behavior/behavior_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/errors/errors_screen.dart';
 import 'features/live/live_feed_screen.dart';
@@ -10,6 +11,7 @@ import 'features/flags/flags_screen.dart';
 import 'features/projects/add_project_screen.dart';
 import 'features/projects/home_screen.dart';
 import 'features/projects/project_settings_screen.dart';
+import 'features/world/world_screen.dart';
 
 final _router = GoRouter(
   routes: [
@@ -29,6 +31,14 @@ final _router = GoRouter(
             GoRoute(
               path: 'live',
               builder: (_, s) => LiveFeedScreen(projectId: s.pathParameters['id']!),
+            ),
+            GoRoute(
+              path: 'behavior',
+              builder: (_, s) => BehaviorScreen(projectId: s.pathParameters['id']!),
+            ),
+            GoRoute(
+              path: 'world',
+              builder: (_, s) => WorldScreen(projectId: s.pathParameters['id']!),
             ),
             GoRoute(
               path: 'errors',

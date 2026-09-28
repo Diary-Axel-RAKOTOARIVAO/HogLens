@@ -12,6 +12,9 @@ A clean, native-feeling PostHog companion for iOS and Android, built with Flutte
 - Live feed of the newest events, refreshed every ten seconds, with a filter by event name.
 - Errors screen grouping `$exception` events by type and message with counts, people affected and a trend.
 - Tap a top event to see its trend, reach, top pages and browsers over the window.
+- Behavior: lifecycle, weekly retention and navigation paths from PostHog's insight engine.
+- Worldwide: visitors by country on a rotating 3D globe with a ranked list.
+- Android home-screen widget with visitors today, refreshed in the background every 30 minutes.
 - Feature flags list per project.
 - Home screen visitor totals across all projects and an update banner when a newer GitHub release exists.
 - Light and dark themes follow the system.

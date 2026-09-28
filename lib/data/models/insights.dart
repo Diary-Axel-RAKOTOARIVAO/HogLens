@@ -134,3 +134,106 @@ class Glance {
   factory Glance.fromJson(Map<String, dynamic> j) =>
       Glance(daily: (j['d'] as List).cast<num>(), week: j['w'] as num);
 }
+
+/// Lifecycle insight: per bucket, how many people were new, returning,
+/// resurrecting or dormant (dormant is stored positive, drawn below zero).
+@immutable
+class LifecycleReport {
+  const LifecycleReport({required this.days, required this.series});
+  final List<DateTime> days;
+
+  /// Keys: new, returning, resurrecting, dormant.
+  final Map<String, List<num>> series;
+
+  static const statuses = ['new', 'returning', 'resurrecting', 'dormant'];
+
+  num total(String status) => (series[status] ?? const []).fold<num>(0, (a, b) => a + b);
+
+  Map<String, dynamic> toJson() => {'days': days.map((d) => d.toIso8601String()).toList(), 'series': series};
+  factory LifecycleReport.fromJson(Map<String, dynamic> j) => LifecycleReport(
+        days: (j['days'] as List).map((d) => DateTime.parse(d as String)).toList(),
+        series: (j['series'] as Map).map((k, v) => MapEntry(k as String, (v as List).cast<num>())),
+      );
+}
+
+@immutable
+class RetentionCohort {
+  const RetentionCohort({required this.start, required this.values});
+  final DateTime start;
+
+  /// values[0] is the cohort size, later entries are people who came back.
+  final List<num> values;
+
+  num get size => values.isEmpty ? 0 : values.first;
+  double? rate(int i) => i >= values.length || size == 0 ? null : (values[i] / size).toDouble();
+
+  Map<String, dynamic> toJson() => {'s': start.toIso8601String(), 'v': values};
+  factory RetentionCohort.fromJson(Map<String, dynamic> j) =>
+      RetentionCohort(start: DateTime.parse(j['s'] as String), values: (j['v'] as List).cast<num>());
+}
+
+@immutable
+class RetentionReport {
+  const RetentionReport({required this.cohorts, required this.periods});
+  final List<RetentionCohort> cohorts;
+  final int periods;
+
+  Map<String, dynamic> toJson() => {'c': cohorts.map((c) => c.toJson()).toList(), 'p': periods};
+  factory RetentionReport.fromJson(Map<String, dynamic> j) => RetentionReport(
+        cohorts: (j['c'] as List).map((c) => RetentionCohort.fromJson(c as Map<String, dynamic>)).toList(),
+        periods: (j['p'] as num).toInt(),
+      );
+}
+
+@immutable
+class PathLink {
+  const PathLink({required this.fromStep, required this.from, required this.to, required this.value});
+  final int fromStep;
+  final String from;
+  final String to;
+  final num value;
+
+  List<dynamic> toJson() => [fromStep, from, to, value];
+  factory PathLink.fromJson(List<dynamic> j) =>
+      PathLink(fromStep: (j[0] as num).toInt(), from: j[1] as String, to: j[2] as String, value: j[3] as num);
+}
+
+@immutable
+class PathsReport {
+  const PathsReport({required this.links});
+  final List<PathLink> links;
+
+  Map<String, dynamic> toJson() => {'l': links.map((l) => l.toJson()).toList()};
+  factory PathsReport.fromJson(Map<String, dynamic> j) =>
+      PathsReport(links: (j['l'] as List).map((l) => PathLink.fromJson(l as List<dynamic>)).toList());
+}
+
+@immutable
+class CountryStat {
+  const CountryStat({required this.code, required this.name, required this.visitors, required this.events});
+  final String code;
+  final String name;
+  final num visitors;
+  final num events;
+
+  /// Regional-indicator flag for the ISO code.
+  String get flag => code.length == 2
+      ? String.fromCharCodes(code.toUpperCase().codeUnits.map((c) => 0x1F1E6 + c - 65))
+      : '🏳️';
+
+  List<dynamic> toJson() => [code, name, visitors, events];
+  factory CountryStat.fromJson(List<dynamic> j) =>
+      CountryStat(code: j[0] as String, name: j[1] as String, visitors: j[2] as num, events: j[3] as num);
+}
+
+@immutable
+class GeoReport {
+  const GeoReport({required this.countries});
+  final List<CountryStat> countries;
+
+  num get totalVisitors => countries.fold<num>(0, (a, c) => a + c.visitors);
+
+  Map<String, dynamic> toJson() => {'c': countries.map((c) => c.toJson()).toList()};
+  factory GeoReport.fromJson(Map<String, dynamic> j) =>
+      GeoReport(countries: (j['c'] as List).map((c) => CountryStat.fromJson(c as List<dynamic>)).toList());
+}
