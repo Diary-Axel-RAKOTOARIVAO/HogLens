@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoglens/data/api/stats_repository.dart';
 import 'package:hoglens/data/models/project.dart';
@@ -49,6 +51,35 @@ void main() {
     expect(c.label, 'Sep 3 – Sep 9');
     expect(RangeSelection.day.resolve(now).hourly, isTrue);
     expect(RangeSelection.day.resolve(now).bucketCount, 24);
+  });
+
+  test('key stats and query results survive a cache round trip', () {
+    final now = DateTime(2026, 9, 28, 12);
+    final r = RangeSelection.week.resolve(now);
+    final stats = KeyStats(
+      range: r,
+      events: const Metric(current: 10, previous: 8),
+      visitors: const Metric(current: 3, previous: 4),
+      views: const Metric(current: 6, previous: 5),
+      sessions: const Metric(current: 2, previous: 2),
+      activeNow: 1,
+      eventSeries: [SeriesPoint(now, 4), SeriesPoint(now.add(const Duration(days: 1)), 6)],
+      visitorSeries: const [],
+      viewSeries: const [],
+      hourlySeries: const [],
+      topEvents: const [TopEvent('\$pageview', 6)],
+      fetchedAt: now,
+    );
+    final back = KeyStats.fromJson(jsonDecode(jsonEncode(stats.toJson())) as Map<String, dynamic>).asCached(now);
+    expect(back.events.current, 10);
+    expect(back.range.start, r.start);
+    expect(back.eventSeries.length, 2);
+    expect(back.topEvents.first.name, '\$pageview');
+    expect(back.fromCache, isTrue);
+    final q = QueryResult(columns: const ['a', 'b'], rows: [['x', 1], [null, 2.5]]);
+    final qb = QueryResult.fromJson(jsonDecode(jsonEncode(q.toJson())) as Map<String, dynamic>);
+    expect(qb.rows[1][1], 2.5);
+    expect(qb.firstCell, 'x');
   });
 
   test('metric delta', () {

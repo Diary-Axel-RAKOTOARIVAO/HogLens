@@ -102,6 +102,24 @@ class StatRange {
   String get endSql => _sql(end);
   String get previousStartSql => _sql(previousStart);
 
+  /// Stable key for caching results of this window. Rolling windows share a
+  /// key per kind so the newest fetch replaces the previous one.
+  String get cacheKey => switch (kind) {
+        RangeKind.custom => 'custom_${start.millisecondsSinceEpoch}_${end.year}${end.month}${end.day}',
+        RangeKind.thisMonth => 'month_${start.year}${start.month}',
+        _ => kind.name,
+      };
+
+  Map<String, dynamic> toJson() =>
+      {'start': start.toIso8601String(), 'end': end.toIso8601String(), 'label': label, 'kind': kind.name};
+
+  factory StatRange.fromJson(Map<String, dynamic> j) => StatRange(
+        start: DateTime.parse(j['start'] as String),
+        end: DateTime.parse(j['end'] as String),
+        label: j['label'] as String,
+        kind: RangeKind.values.byName(j['kind'] as String),
+      );
+
   String get whereCurrent => 'timestamp >= $startSql AND timestamp < $endSql';
   String get wherePrevious => 'timestamp >= $previousStartSql AND timestamp < $startSql';
   String get whereBoth => 'timestamp >= $previousStartSql AND timestamp < $endSql';
@@ -117,6 +135,9 @@ class Metric {
     if (previous == 0) return current == 0 ? 0 : null;
     return (current - previous) / previous;
   }
+
+  List<num> toJson() => [current, previous];
+  factory Metric.fromJson(List<dynamic> j) => Metric(current: j[0] as num, previous: j[1] as num);
 }
 
 @immutable
@@ -124,6 +145,9 @@ class SeriesPoint {
   const SeriesPoint(this.t, this.v);
   final DateTime t;
   final num v;
+
+  List<dynamic> toJson() => [t.toIso8601String(), v];
+  factory SeriesPoint.fromJson(List<dynamic> j) => SeriesPoint(DateTime.parse(j[0] as String), j[1] as num);
 }
 
 @immutable
@@ -131,6 +155,9 @@ class TopEvent {
   const TopEvent(this.name, this.count);
   final String name;
   final num count;
+
+  List<dynamic> toJson() => [name, count];
+  factory TopEvent.fromJson(List<dynamic> j) => TopEvent(j[0] as String, j[1] as num);
 }
 
 @immutable
@@ -148,6 +175,7 @@ class KeyStats {
     required this.hourlySeries,
     required this.topEvents,
     required this.fetchedAt,
+    this.fromCache = false,
   });
 
   final StatRange range;
@@ -168,17 +196,80 @@ class KeyStats {
   final List<SeriesPoint> hourlySeries;
   final List<TopEvent> topEvents;
 
+  /// True when this is the last saved result shown because the network
+  /// fetch failed; [fetchedAt] is then the time it was saved.
+  final bool fromCache;
+
   num get totalTop => topEvents.fold<num>(0, (a, e) => a + e.count);
+
+  KeyStats asCached(DateTime savedAt) => KeyStats(
+        range: range,
+        events: events,
+        visitors: visitors,
+        views: views,
+        sessions: sessions,
+        activeNow: activeNow,
+        eventSeries: eventSeries,
+        visitorSeries: visitorSeries,
+        viewSeries: viewSeries,
+        hourlySeries: hourlySeries,
+        topEvents: topEvents,
+        fetchedAt: savedAt,
+        fromCache: true,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'range': range.toJson(),
+        'events': events.toJson(),
+        'visitors': visitors.toJson(),
+        'views': views.toJson(),
+        'sessions': sessions.toJson(),
+        'activeNow': activeNow,
+        'eventSeries': eventSeries.map((p) => p.toJson()).toList(),
+        'visitorSeries': visitorSeries.map((p) => p.toJson()).toList(),
+        'viewSeries': viewSeries.map((p) => p.toJson()).toList(),
+        'hourlySeries': hourlySeries.map((p) => p.toJson()).toList(),
+        'topEvents': topEvents.map((e) => e.toJson()).toList(),
+        'fetchedAt': fetchedAt.toIso8601String(),
+      };
+
+  factory KeyStats.fromJson(Map<String, dynamic> j) {
+    List<SeriesPoint> series(String k) =>
+        (j[k] as List).map((e) => SeriesPoint.fromJson(e as List<dynamic>)).toList();
+    return KeyStats(
+      range: StatRange.fromJson(j['range'] as Map<String, dynamic>),
+      events: Metric.fromJson(j['events'] as List<dynamic>),
+      visitors: Metric.fromJson(j['visitors'] as List<dynamic>),
+      views: Metric.fromJson(j['views'] as List<dynamic>),
+      sessions: Metric.fromJson(j['sessions'] as List<dynamic>),
+      activeNow: j['activeNow'] as num,
+      eventSeries: series('eventSeries'),
+      visitorSeries: series('visitorSeries'),
+      viewSeries: series('viewSeries'),
+      hourlySeries: series('hourlySeries'),
+      topEvents: (j['topEvents'] as List).map((e) => TopEvent.fromJson(e as List<dynamic>)).toList(),
+      fetchedAt: DateTime.parse(j['fetchedAt'] as String),
+    );
+  }
   final DateTime fetchedAt;
 }
 
 @immutable
 class QueryResult {
-  const QueryResult({required this.columns, required this.rows});
+  const QueryResult({required this.columns, required this.rows, this.fromCache = false, this.savedAt});
   final List<String> columns;
   final List<List<dynamic>> rows;
+  final bool fromCache;
+  final DateTime? savedAt;
 
   bool get isEmpty => rows.isEmpty;
+
+  QueryResult asCached(DateTime at) => QueryResult(columns: columns, rows: rows, fromCache: true, savedAt: at);
+  Map<String, dynamic> toJson() => {'columns': columns, 'rows': rows};
+  factory QueryResult.fromJson(Map<String, dynamic> j) => QueryResult(
+        columns: (j['columns'] as List).map((c) => c.toString()).toList(),
+        rows: (j['rows'] as List).map((r) => (r as List).cast<dynamic>()).toList(),
+      );
   dynamic get firstCell => rows.isEmpty || rows.first.isEmpty ? null : rows.first.first;
 }
 
@@ -198,6 +289,18 @@ class FeatureFlag {
   final bool active;
   final int? rolloutPercentage;
   final DateTime? createdAt;
+
+  Map<String, dynamic> toCache() =>
+      {'id': id, 'key': key, 'name': name, 'active': active, 'rollout': rolloutPercentage, 'createdAt': createdAt?.toIso8601String()};
+
+  factory FeatureFlag.fromCache(Map<String, dynamic> j) => FeatureFlag(
+        id: (j['id'] as num).toInt(),
+        key: j['key'] as String,
+        name: j['name'] as String,
+        active: j['active'] as bool,
+        rolloutPercentage: (j['rollout'] as num?)?.toInt(),
+        createdAt: DateTime.tryParse(j['createdAt'] as String? ?? ''),
+      );
 
   factory FeatureFlag.fromJson(Map<String, dynamic> j) {
     int? rollout;

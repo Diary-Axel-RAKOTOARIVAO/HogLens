@@ -138,6 +138,8 @@ class CustomWidgetTile extends ConsumerWidget {
           Row(
             children: [
               Expanded(child: CardLabel(spec.title, icon: _iconFor(spec.kind))),
+              if (result.value?.fromCache == true)
+                Icon(SolarIconsOutline.cloudCross, size: 14, color: c.textFaint),
             ],
           ),
           const SizedBox(height: 14),

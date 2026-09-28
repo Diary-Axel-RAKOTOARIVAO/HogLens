@@ -28,7 +28,12 @@ class FlagsScreen extends ConsumerWidget {
         title: const Text('Feature flags'),
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.refresh(flagsProvider(projectId).future),
+        onRefresh: () async {
+          ref.invalidate(flagsProvider(projectId));
+          try {
+            await ref.read(flagsProvider(projectId).future);
+          } catch (_) {}
+        },
         child: flags.when(
           loading: () => ListView(
             padding: const EdgeInsets.all(Spacing.page),

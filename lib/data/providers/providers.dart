@@ -9,10 +9,42 @@ import '../api/stats_repository.dart';
 import '../models/project.dart';
 import '../models/stats.dart';
 import '../models/widget_spec.dart';
+import '../storage/cache_store.dart';
 import '../storage/project_store.dart';
 
 /// Opened once in main() and overridden into the ProviderScope.
 final storeProvider = Provider<ProjectStore>((ref) => throw UnimplementedError());
+final cacheProvider = Provider<CacheStore>((ref) => throw UnimplementedError());
+
+/// Emits the last saved value first (marked as cached), then the fresh one.
+/// If the fetch fails and a saved value exists, that value is kept.
+Future<T> _cached<T>({
+  required void Function(T stale) emit,
+  required CacheStore cache,
+  required String key,
+  required T Function(Map<String, dynamic> data, DateTime savedAt) decode,
+  required Map<String, dynamic> Function(T value) encode,
+  required Future<T> Function() fetch,
+}) async {
+  T? stale;
+  final saved = await cache.read(key);
+  if (saved != null) {
+    try {
+      stale = decode(saved.$1, saved.$2);
+      emit(stale as T);
+    } catch (_) {
+      stale = null;
+    }
+  }
+  try {
+    final fresh = await fetch();
+    await cache.write(key, encode(fresh));
+    return fresh;
+  } catch (e) {
+    if (stale != null) return stale;
+    rethrow;
+  }
+}
 
 // ---- projects -----------------------------------------------------------
 
@@ -72,6 +104,7 @@ class ProjectsNotifier extends Notifier<List<PhProject>> {
     state = state.where((x) => x.id != id).toList();
     await _store.saveProjects(state);
     await ref.read(widgetsProvider.notifier).removeProject(id);
+    await ref.read(cacheProvider).removeProject(id);
   }
 
   Future<void> reorder(int oldIndex, int newIndex) async {
@@ -117,41 +150,94 @@ final rangeProvider = NotifierProvider<RangeNotifier, RangeSelection>(RangeNotif
 /// changes or a dependent provider is invalidated.
 StatRange currentRange(Ref ref) => ref.watch(rangeProvider).resolve(DateTime.now());
 
-final keyStatsProvider = FutureProvider.family<KeyStats, String>((ref, projectId) async {
-  final project = ref.watch(projectProvider(projectId));
-  if (project == null) throw PosthogException('Project removed.');
-  final client = await ref.watch(clientProvider(projectId).future);
-  return StatsRepository(client, project.projectId).fetch(currentRange(ref));
-});
+class KeyStatsNotifier extends AsyncNotifier<KeyStats> {
+  KeyStatsNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<KeyStats> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    final range = currentRange(ref);
+    final cache = ref.read(cacheProvider);
+    return _cached<KeyStats>(
+      emit: (v) => state = AsyncData(v),
+      cache: cache,
+      key: 'stats_${projectId}_${range.cacheKey}',
+      decode: (d, at) => KeyStats.fromJson(d).asCached(at),
+      encode: (v) => v.toJson(),
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return StatsRepository(client, project.projectId).fetch(range);
+      },
+    );
+  }
+}
+
+final keyStatsProvider = AsyncNotifierProvider.family<KeyStatsNotifier, KeyStats, String>(KeyStatsNotifier.new);
 
 /// Daily event counts for the last 7 days (last element is today), used by
 /// the project cards on the home screen. One query per project.
-final glanceProvider = FutureProvider.family<List<num>, String>((ref, projectId) async {
-  final project = ref.watch(projectProvider(projectId));
-  if (project == null) return const [];
-  final client = await ref.watch(clientProvider(projectId).future);
-  final r = await client.query(
-    project.projectId,
-    'SELECT toStartOfDay(timestamp) AS d, count() FROM events '
-    'WHERE timestamp >= toStartOfDay(now()) - INTERVAL 6 DAY AND timestamp <= now() '
-    'GROUP BY d ORDER BY d',
-    name: 'hoglens_glance',
-  );
-  final pts = <SeriesPoint>[];
-  for (final row in r.rows) {
-    final t = DateTime.tryParse('${row[0]}')?.toLocal();
-    final v = row.length > 1 ? row[1] : 0;
-    if (t != null) pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
-  }
-  return StatsRepository.fill(pts, RangeSelection.week.resolve(DateTime.now())).map((p) => p.v).toList();
-});
+class GlanceNotifier extends AsyncNotifier<List<num>> {
+  GlanceNotifier(this.projectId);
+  final String projectId;
 
-final flagsProvider = FutureProvider.family<List<FeatureFlag>, String>((ref, projectId) async {
-  final project = ref.watch(projectProvider(projectId));
-  if (project == null) throw PosthogException('Project removed.');
-  final client = await ref.watch(clientProvider(projectId).future);
-  return client.listFlags(project.projectId);
-});
+  @override
+  Future<List<num>> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) return const [];
+    return _cached<List<num>>(
+      emit: (v) => state = AsyncData(v),
+      cache: ref.read(cacheProvider),
+      key: 'glance_$projectId',
+      decode: (d, _) => (d['v'] as List).cast<num>(),
+      encode: (v) => {'v': v},
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        final r = await client.query(
+          project.projectId,
+          'SELECT toStartOfDay(timestamp) AS d, count() FROM events '
+          'WHERE timestamp >= toStartOfDay(now()) - INTERVAL 6 DAY AND timestamp <= now() '
+          'GROUP BY d ORDER BY d',
+          name: 'hoglens_glance',
+        );
+        final pts = <SeriesPoint>[];
+        for (final row in r.rows) {
+          final t = DateTime.tryParse('${row[0]}')?.toLocal();
+          final v = row.length > 1 ? row[1] : 0;
+          if (t != null) pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
+        }
+        return StatsRepository.fill(pts, RangeSelection.week.resolve(DateTime.now())).map((p) => p.v).toList();
+      },
+    );
+  }
+}
+
+final glanceProvider = AsyncNotifierProvider.family<GlanceNotifier, List<num>, String>(GlanceNotifier.new);
+
+class FlagsNotifier extends AsyncNotifier<List<FeatureFlag>> {
+  FlagsNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<List<FeatureFlag>> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    return _cached<List<FeatureFlag>>(
+      emit: (v) => state = AsyncData(v),
+      cache: ref.read(cacheProvider),
+      key: 'flags_$projectId',
+      decode: (d, _) => (d['v'] as List).map((f) => FeatureFlag.fromCache(f as Map<String, dynamic>)).toList(),
+      encode: (v) => {'v': v.map((f) => f.toCache()).toList()},
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return client.listFlags(project.projectId);
+      },
+    );
+  }
+}
+
+final flagsProvider = AsyncNotifierProvider.family<FlagsNotifier, List<FeatureFlag>, String>(FlagsNotifier.new);
 
 // ---- custom widgets -----------------------------------------------------
 
@@ -207,15 +293,34 @@ final projectWidgetsProvider = Provider.family<List<StatWidgetSpec>, String>(
 
 typedef CustomWidgetKey = (String projectId, String widgetId);
 
-final widgetResultProvider = FutureProvider.family<QueryResult, CustomWidgetKey>((ref, key) async {
-  final (projectId, widgetId) = key;
-  final project = ref.watch(projectProvider(projectId));
-  // Select only this widget's spec so adding or reordering siblings does not
-  // refetch every widget (the API allows 3 concurrent queries).
-  final spec = ref.watch(
-    projectWidgetsProvider(projectId).select((l) => l.where((w) => w.id == widgetId).firstOrNull),
-  );
-  if (project == null || spec == null) throw PosthogException('Widget removed.');
-  final client = await ref.watch(clientProvider(projectId).future);
-  return client.query(project.projectId, StatsRepository.resolve(spec.hogql, currentRange(ref)), name: 'hoglens_widget');
-});
+class WidgetResultNotifier extends AsyncNotifier<QueryResult> {
+  WidgetResultNotifier(this.key);
+  final CustomWidgetKey key;
+
+  @override
+  Future<QueryResult> build() async {
+    final (projectId, widgetId) = key;
+    final project = ref.watch(projectProvider(projectId));
+    // Select only this widget's spec so adding or reordering siblings does not
+    // refetch every widget (the API allows 3 concurrent queries).
+    final spec = ref.watch(
+      projectWidgetsProvider(projectId).select((l) => l.where((w) => w.id == widgetId).firstOrNull),
+    );
+    if (project == null || spec == null) throw PosthogException('Widget removed.');
+    final range = currentRange(ref);
+    return _cached<QueryResult>(
+      emit: (v) => state = AsyncData(v),
+      cache: ref.read(cacheProvider),
+      key: 'widget_${projectId}_${widgetId}_${range.cacheKey}',
+      decode: (d, at) => QueryResult.fromJson(d).asCached(at),
+      encode: (v) => v.toJson(),
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return client.query(project.projectId, StatsRepository.resolve(spec.hogql, range), name: 'hoglens_widget');
+      },
+    );
+  }
+}
+
+final widgetResultProvider =
+    AsyncNotifierProvider.family<WidgetResultNotifier, QueryResult, CustomWidgetKey>(WidgetResultNotifier.new);

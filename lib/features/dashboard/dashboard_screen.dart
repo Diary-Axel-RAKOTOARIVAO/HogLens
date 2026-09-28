@@ -104,6 +104,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               sliver: SliverList.list(
                 children: [
                   _RangeBar(selection: selection),
+                  if (stats.value?.fromCache == true) ...[
+                    const SizedBox(height: 12),
+                    _OfflineBadge(savedAt: stats.value!.fetchedAt),
+                  ],
                   const SizedBox(height: 16),
                   stats.when(
                     skipLoadingOnRefresh: true,
@@ -165,6 +169,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _OfflineBadge extends StatelessWidget {
+  const _OfflineBadge({required this.savedAt});
+  final DateTime savedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.chip)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(SolarIconsOutline.cloudCross, size: 15, color: c.textMuted),
+              const SizedBox(width: 7),
+              Text(
+                'Offline · saved ${Fmt.relative(savedAt)}',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.textMuted),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
