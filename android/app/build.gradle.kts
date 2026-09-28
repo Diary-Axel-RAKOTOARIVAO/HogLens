@@ -40,12 +40,25 @@ android {
             storePassword = keyProps.getProperty("storePassword")
             keyAlias = keyProps.getProperty("keyAlias")
             keyPassword = keyProps.getProperty("keyPassword")
+            // v1 + v2 + v3 so every sideload installer accepts the file.
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
         }
+    }
+
+    packaging {
+        // Compress native libraries inside the APK. Sideloaded builds care
+        // about download size more than install time.
+        jniLibs { useLegacyPackaging = true }
     }
 
     buildTypes {
         release {
             signingConfig = if (hasReleaseKey) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
