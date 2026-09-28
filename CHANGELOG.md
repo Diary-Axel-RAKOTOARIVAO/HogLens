@@ -5,6 +5,12 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-28
+
+### Fixed
+- Release builds on Android could not reach any PostHog host ("Could not reach https://us.posthog.com") because the internet permission was only declared for debug builds. Connecting now works on installed APKs.
+- Network errors now include the underlying cause to make them easier to diagnose.
+
 ## [0.1.0] - 2026-09-28
 
 ### Added
