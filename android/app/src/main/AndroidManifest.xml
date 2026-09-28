@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Release builds do not inherit this from the debug manifest. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="HogLens"
         android:name="${applicationName}"

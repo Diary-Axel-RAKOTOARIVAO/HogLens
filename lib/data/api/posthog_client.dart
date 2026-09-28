@@ -131,11 +131,12 @@ class PosthogClient implements PhApi {
         case 429:
           throw PosthogException('Rate limited by PostHog. Try again shortly.', statusCode: code);
         case null:
+          final cause = e.error == null ? '' : ' (${e.error.runtimeType}: ${e.error})';
           throw PosthogException(
             e.type == DioExceptionType.connectionTimeout ||
                     e.type == DioExceptionType.receiveTimeout
                 ? 'Timed out reaching PostHog.'
-                : 'Could not reach ${_dio.options.baseUrl}.',
+                : 'Could not reach ${_dio.options.baseUrl}$cause',
           );
         default:
           throw PosthogException(
