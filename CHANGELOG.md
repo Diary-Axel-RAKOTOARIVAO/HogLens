@@ -5,6 +5,11 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-28
+
+### Changed
+- The projects page shows unique visitors instead of events: each card has today's visitors with a seven-day strip, and the totals strip shows visitors today and unique visitors over seven days across all projects.
+
 ## [0.5.0] - 2026-09-28
 
 ### Added
