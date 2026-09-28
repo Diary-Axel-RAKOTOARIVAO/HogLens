@@ -171,7 +171,7 @@ class CustomWidgetTile extends ConsumerWidget {
     switch (spec.kind) {
       case WidgetKind.number:
         final v = r.firstCell;
-        return BigValue(v is num ? Fmt.compact(v) : (v?.toString() ?? '—'));
+        return v is num ? AnimatedBigValue(v, format: Fmt.compact) : BigValue(v?.toString() ?? '—');
       case WidgetKind.sparkline:
         final pts = <SeriesPoint>[];
         for (final row in r.rows) {

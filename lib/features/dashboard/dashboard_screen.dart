@@ -41,6 +41,57 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
+  void _showProjectMenu(BuildContext context, PhProject project) {
+    final c = context.colors;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ProjectAvatar(project: project, size: 44),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(project.name, style: Theme.of(ctx).textTheme.titleLarge),
+                        Text('${project.hostLabel} · #${project.projectId}', style: TextStyle(color: c.textMuted, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _MenuRow(
+                icon: SolarIconsOutline.flag,
+                label: 'Feature flags',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/p/${project.id}/flags');
+                },
+              ),
+              const SizedBox(height: 8),
+              _MenuRow(
+                icon: SolarIconsOutline.settings,
+                label: 'Project settings',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/p/${project.id}/settings');
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final project = ref.watch(projectProvider(widget.projectId));
@@ -72,32 +123,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: IconCircleButton(icon: SolarIconsOutline.altArrowLeft, onTap: () => context.pop()),
                 ),
               ),
-              titleSpacing: 12,
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(project.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(
-                    '${project.hostLabel} · #${project.projectId}',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: c.textMuted),
+              titleSpacing: 8,
+              title: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _showProjectMenu(context, project),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ProjectAvatar(project: project, size: 40),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(child: Text(project.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                const SizedBox(width: 4),
+                                Icon(SolarIconsOutline.altArrowDown, size: 16, color: c.textMuted),
+                              ],
+                            ),
+                            Text(
+                              '${project.hostLabel} · #${project.projectId}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-              actions: [
-                IconCircleButton(
-                  icon: SolarIconsOutline.flag,
-                  tooltip: 'Feature flags',
-                  onTap: () => context.push('/p/${project.id}/flags'),
-                ),
-                const SizedBox(width: 10),
-                IconCircleButton(
-                  icon: SolarIconsOutline.settings,
-                  tooltip: 'Settings',
-                  onTap: () => context.push('/p/${project.id}/settings'),
-                ),
-                const SizedBox(width: Spacing.page),
-              ],
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(Spacing.page, 8, Spacing.page, 110),
@@ -202,6 +264,36 @@ class _OfflineBadge extends StatelessWidget {
   }
 }
 
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({required this.icon, required this.label, required this.onTap, this.selected = false, this.trailing});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Card1(
+      radius: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: selected ? c.text : c.textMuted),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(label, style: TextStyle(fontWeight: selected ? FontWeight.w700 : FontWeight.w500, fontSize: 15)),
+          ),
+          trailing ?? Icon(selected ? SolarIconsBold.checkCircle : SolarIconsOutline.altArrowRight, size: 18, color: selected ? c.text : c.textFaint),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shows only the active range; tapping opens the list of options.
 class _RangeBar extends ConsumerWidget {
   const _RangeBar({required this.selection});
   final RangeSelection selection;
@@ -241,55 +333,96 @@ class _RangeBar extends ConsumerWidget {
     }
   }
 
+  void _open(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final descriptions = {
+      RangeKind.day: 'Rolling last 24 hours',
+      RangeKind.week: 'Rolling last 7 days',
+      RangeKind.month: 'Rolling last 30 days',
+      RangeKind.thisMonth: 'From the 1st to today',
+    };
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Time range', style: Theme.of(ctx).textTheme.titleLarge),
+              const SizedBox(height: 14),
+              for (final r in RangeSelection.presets) ...[
+                _MenuRow(
+                  icon: r.kind == RangeKind.thisMonth ? SolarIconsOutline.calendar : SolarIconsOutline.clockCircle,
+                  label: r.kind == RangeKind.thisMonth ? 'This month · ${r.label(now)}' : 'Last ${r.label(now)}',
+                  selected: selection == r,
+                  trailing: selection == r
+                      ? null
+                      : Text(descriptions[r.kind]!, style: TextStyle(fontSize: 11.5, color: ctx.colors.textFaint)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(rangeProvider.notifier).set(r);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+              _MenuRow(
+                icon: SolarIconsOutline.calendarSearch,
+                label: selection.kind == RangeKind.custom ? 'Custom · ${selection.label(now)}' : 'Custom dates',
+                selected: selection.kind == RangeKind.custom,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickCustom(context, ref);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final now = DateTime.now();
-    Widget pill(String label, bool selected, VoidCallback onTap, {IconData? icon}) => GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: 180.ms,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-            decoration: BoxDecoration(
-              color: selected ? c.text : Colors.transparent,
-              borderRadius: BorderRadius.circular(Radii.chip),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 15, color: selected ? c.bg : c.textMuted),
+    final label = switch (selection.kind) {
+      RangeKind.thisMonth => selection.label(now),
+      RangeKind.custom => selection.label(now),
+      _ => 'Last ${selection.label(now)}',
+    };
+    return Row(
+      children: [
+        Material(
+          color: c.surface,
+          shape: const StadiumBorder(),
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: () => _open(context, ref),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(SolarIconsOutline.calendar, size: 16, color: c.textMuted),
+                  const SizedBox(width: 8),
+                  AnimatedSwitcher(
+                    duration: 200.ms,
+                    child: Text(
+                      label,
+                      key: ValueKey(label),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.text),
+                    ),
+                  ),
                   const SizedBox(width: 6),
+                  Icon(SolarIconsOutline.altArrowDown, size: 16, color: c.textMuted),
                 ],
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? c.bg : c.textMuted),
-                ),
-              ],
+              ),
             ),
           ),
-        );
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      clipBehavior: Clip.none,
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.chip)),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final r in RangeSelection.presets)
-              pill(r.label(now), selection == r, () => ref.read(rangeProvider.notifier).set(r)),
-            pill(
-              selection.kind == RangeKind.custom ? selection.label(now) : 'Custom',
-              selection.kind == RangeKind.custom,
-              () => _pickCustom(context, ref),
-              icon: SolarIconsOutline.calendar,
-            ),
-          ],
         ),
-      ),
+      ],
     );
   }
 }
@@ -328,13 +461,13 @@ class _KeyStats extends StatelessWidget {
                   children: [
                     const CardLabel('Events', icon: SolarIconsOutline.chartSquare),
                     const SizedBox(height: 10),
-                    BigValue(Fmt.compact(stats.events.current), size: 28),
+                    AnimatedBigValue(stats.events.current, format: Fmt.compact, size: 26),
                     const SizedBox(height: 2),
                     _DeltaLine(stats.events.delta, suffix: 'vs previous'),
                     const Spacer(),
                     MiniBars(values: stats.eventSeries.map((p) => p.v).toList(), color: project.accent, height: 40, gap: 3),
                     const SizedBox(height: 6),
-                    Text(range.hourly ? 'Per hour' : 'Per day', style: TextStyle(color: c.textMuted, fontSize: 12.5)),
+                    Text(range.hourly ? 'Per hour' : 'Per day', style: TextStyle(color: c.textMuted, fontSize: 11.5)),
                   ],
                 ),
               ),
@@ -351,13 +484,13 @@ class _KeyStats extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
                       children: [
-                        BigValue(Fmt.full(stats.activeNow), size: 28),
+                        AnimatedBigValue(stats.activeNow, format: Fmt.full, size: 26),
                         const SizedBox(width: 6),
                         Text('on site', style: TextStyle(color: c.textMuted, fontSize: 14)),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text('Last 5 minutes', style: TextStyle(color: c.textMuted, fontSize: 13)),
+                    Text('Last 5 minutes', style: TextStyle(color: c.textMuted, fontSize: 12)),
                     const Spacer(),
                     HeatStrip(points: stats.hourlySeries, color: project.accent, compact: true),
                     const SizedBox(height: 6),
@@ -365,7 +498,7 @@ class _KeyStats extends StatelessWidget {
                       peak == null ? 'Quiet 24h' : 'Peak ${Fmt.hour(peak.t)} · ${Fmt.compact(peak.v)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: c.textMuted, fontSize: 12.5),
+                      style: TextStyle(color: c.textMuted, fontSize: 11.5),
                     ),
                   ],
                 ),
@@ -383,7 +516,7 @@ class _KeyStats extends StatelessWidget {
                   children: [
                     const CardLabel('Sessions', icon: SolarIconsOutline.cursor),
                     const SizedBox(height: 10),
-                    BigValue(Fmt.compact(sessions), size: 28),
+                    AnimatedBigValue(sessions, format: Fmt.compact, size: 26),
                     const SizedBox(height: 2),
                     _DeltaLine(stats.sessions.delta, suffix: 'vs previous'),
                     const Spacer(),
@@ -469,22 +602,6 @@ class _HeroCard extends StatelessWidget {
     final delta = metric.delta;
     final range = stats.range;
 
-    Widget seg(String label, HeroMode m) => GestureDetector(
-          onTap: () => onModeChanged(m),
-          child: AnimatedContainer(
-            duration: 180.ms,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: mode == m ? fg : Colors.transparent,
-              borderRadius: BorderRadius.circular(Radii.chip),
-            ),
-            child: Text(
-              label,
-              style: TextStyle(color: mode == m ? bg : fg, fontSize: 12.5, fontWeight: FontWeight.w700),
-            ),
-          ),
-        );
-
     return SizedBox(
       height: 260,
       child: Card1(
@@ -522,10 +639,16 @@ class _HeroCard extends StatelessWidget {
                           style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12, letterSpacing: 1.6, fontWeight: FontWeight.w500),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(color: fg.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(Radii.chip)),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [seg('Unique', HeroMode.unique), seg('All', HeroMode.all)]),
+                      SlidingToggle<HeroMode>(
+                        value: mode,
+                        options: const [HeroMode.unique, HeroMode.all],
+                        labels: const ['Unique', 'All'],
+                        onChanged: onModeChanged,
+                        background: fg.withValues(alpha: 0.18),
+                        highlight: fg,
+                        foreground: fg,
+                        highlightForeground: bg,
+                        segmentWidth: 62,
                       ),
                     ],
                   ),
@@ -533,7 +656,7 @@ class _HeroCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      BigValue(Fmt.compact(metric.current), size: 44, color: fg),
+                      AnimatedBigValue(metric.current, format: Fmt.compact, size: 44, color: fg),
                       const SizedBox(width: 12),
                       if (delta != null)
                         Container(
@@ -570,14 +693,14 @@ class _DeltaLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    if (delta == null) return Text('No previous data', style: TextStyle(color: c.textMuted, fontSize: 14));
+    if (delta == null) return Text('No previous data', style: TextStyle(color: c.textMuted, fontSize: 12.5));
     final color = delta == 0 ? c.textMuted : (delta! > 0 ? c.positive : c.negative);
     return Text.rich(
       TextSpan(children: [
         TextSpan(text: Fmt.percent(delta), style: TextStyle(color: color, fontWeight: FontWeight.w600)),
         TextSpan(text: ' $suffix', style: TextStyle(color: c.textMuted)),
       ]),
-      style: const TextStyle(fontSize: 14),
+      style: const TextStyle(fontSize: 12.5),
     );
   }
 }

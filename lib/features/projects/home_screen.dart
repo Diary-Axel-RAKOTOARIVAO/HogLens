@@ -156,7 +156,7 @@ class _ProjectCard extends ConsumerWidget {
               data: (v) => Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  BigValue(Fmt.compact(v.isEmpty ? 0 : v.last), size: 24),
+                  AnimatedBigValue(v.isEmpty ? 0 : v.last, format: Fmt.compact, size: 24),
                   const SizedBox(height: 2),
                   Text('events today', style: TextStyle(color: c.textMuted, fontSize: 13)),
                   const SizedBox(height: 8),

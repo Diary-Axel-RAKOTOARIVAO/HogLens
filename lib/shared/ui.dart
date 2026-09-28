@@ -163,6 +163,109 @@ class BigValue extends StatelessWidget {
   }
 }
 
+/// [BigValue] that counts from its previous value to the new one whenever
+/// the number changes, so refreshes are visible.
+class AnimatedBigValue extends StatelessWidget {
+  const AnimatedBigValue(this.value, {super.key, this.format, this.size = 30, this.color, this.decimals = 0});
+  final num value;
+  final String Function(num)? format;
+  final double size;
+  final Color? color;
+
+  /// Decimal places kept in intermediate frames (0 rounds to integers).
+  final int decimals;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: value.toDouble()),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) {
+        final n = decimals == 0 ? v.round() : double.parse(v.toStringAsFixed(decimals));
+        return BigValue(format == null ? '$n' : format!(n), size: size, color: color);
+      },
+    );
+  }
+}
+
+/// Two-option switch whose highlight slides between the labels.
+class SlidingToggle<T> extends StatelessWidget {
+  const SlidingToggle({
+    super.key,
+    required this.value,
+    required this.options,
+    required this.labels,
+    required this.onChanged,
+    required this.background,
+    required this.highlight,
+    required this.foreground,
+    required this.highlightForeground,
+    this.segmentWidth = 64,
+  });
+
+  final T value;
+  final List<T> options;
+  final List<String> labels;
+  final ValueChanged<T> onChanged;
+  final Color background;
+  final Color highlight;
+  final Color foreground;
+  final Color highlightForeground;
+  final double segmentWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final index = options.indexOf(value);
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(Radii.chip)),
+      child: SizedBox(
+        width: segmentWidth * options.length,
+        height: 30,
+        child: Stack(
+          children: [
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment(options.length == 1 ? 0 : -1 + 2 * index / (options.length - 1), 0),
+              child: Container(
+                width: segmentWidth,
+                height: 30,
+                decoration: BoxDecoration(color: highlight, borderRadius: BorderRadius.circular(Radii.chip)),
+              ),
+            ),
+            Row(
+              children: [
+                for (var i = 0; i < options.length; i++)
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onChanged(options[i]),
+                    child: SizedBox(
+                      width: segmentWidth,
+                      height: 30,
+                      child: Center(
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 240),
+                          style: TextStyle(
+                            color: i == index ? highlightForeground : foreground,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          child: Text(labels[i]),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Thick rounded progress bar.
 class ProgressBar extends StatelessWidget {
   const ProgressBar({super.key, required this.value, required this.color, this.height = 18});
@@ -243,9 +346,9 @@ class KeyValueRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final size = compact ? 13.0 : 15.0;
+    final size = compact ? 11.5 : 15.0;
     return Padding(
-      padding: EdgeInsets.only(top: compact ? 4 : 6),
+      padding: EdgeInsets.only(top: compact ? 3 : 6),
       child: Row(
         children: [
           Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textMuted, fontSize: size))),
