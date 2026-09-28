@@ -5,6 +5,14 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-28
+
+### Added
+- Behavior screen: user lifecycle (new, returning, resurrecting, dormant) as stacked bars, weekly retention cohorts as a heat grid, and navigation paths as a flow diagram. These use PostHog's own insight engine, so they are computed and cached server-side instead of scanning events with hand-written queries.
+- Worldwide screen: visitors by country on a rotating 3D globe with flag markers and counts, plus the ranked list with shares.
+- Android home-screen widget showing a project's visitors today, change versus yesterday, the seven-day strip and the weekly total, refreshed every 30 minutes in the background. Pick the project and add the widget from Project settings.
+- The live feed is a timeline: connected icon markers per event type, person id and page on each entry.
+
 ## [0.5.1] - 2026-09-28
 
 ### Changed
