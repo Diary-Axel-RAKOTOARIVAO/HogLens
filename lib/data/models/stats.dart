@@ -259,19 +259,31 @@ class KeyStats {
 
 @immutable
 class QueryResult {
-  const QueryResult({required this.columns, required this.rows, this.fromCache = false, this.savedAt});
+  const QueryResult({required this.columns, required this.rows, this.fromCache = false, this.savedAt, this.previous});
   final List<String> columns;
   final List<List<dynamic>> rows;
   final bool fromCache;
   final DateTime? savedAt;
 
+  /// First cell of the same query over the previous window, when compared.
+  final num? previous;
+
   bool get isEmpty => rows.isEmpty;
 
-  QueryResult asCached(DateTime at) => QueryResult(columns: columns, rows: rows, fromCache: true, savedAt: at);
-  Map<String, dynamic> toJson() => {'columns': columns, 'rows': rows};
+  double? get delta {
+    final cur = firstCell;
+    if (previous == null || cur is! num) return null;
+    return Metric(current: cur, previous: previous!).delta;
+  }
+
+  QueryResult asCached(DateTime at) =>
+      QueryResult(columns: columns, rows: rows, fromCache: true, savedAt: at, previous: previous);
+  QueryResult withPrevious(num? p) => QueryResult(columns: columns, rows: rows, fromCache: fromCache, savedAt: savedAt, previous: p);
+  Map<String, dynamic> toJson() => {'columns': columns, 'rows': rows, 'previous': previous};
   factory QueryResult.fromJson(Map<String, dynamic> j) => QueryResult(
         columns: (j['columns'] as List).map((c) => c.toString()).toList(),
         rows: (j['rows'] as List).map((r) => (r as List).cast<dynamic>()).toList(),
+        previous: j['previous'] as num?,
       );
   dynamic get firstCell => rows.isEmpty || rows.first.isEmpty ? null : rows.first.first;
 }

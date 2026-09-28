@@ -1,11 +1,17 @@
+import 'dart:async';
 import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../api/demo_client.dart';
+import '../api/insights_repository.dart';
 import '../api/posthog_client.dart';
 import '../api/stats_repository.dart';
+import '../models/insights.dart';
 import '../models/project.dart';
 import '../models/stats.dart';
 import '../models/widget_spec.dart';
@@ -207,7 +213,14 @@ class GlanceNotifier extends AsyncNotifier<List<num>> {
           final v = row.length > 1 ? row[1] : 0;
           if (t != null) pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
         }
-        return StatsRepository.fill(pts, RangeSelection.week.resolve(DateTime.now())).map((p) => p.v).toList();
+        final now = DateTime.now();
+        final window = StatRange(
+          start: DateTime(now.year, now.month, now.day - 6),
+          end: now,
+          label: '7d',
+          kind: RangeKind.week,
+        );
+        return StatsRepository.fill(pts, window).map((p) => p.v).toList();
       },
     );
   }
@@ -316,7 +329,12 @@ class WidgetResultNotifier extends AsyncNotifier<QueryResult> {
       encode: (v) => v.toJson(),
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
-        return client.query(project.projectId, StatsRepository.resolve(spec.hogql, range), name: 'hoglens_widget');
+        final current = await client.query(project.projectId, StatsRepository.resolve(spec.hogql, range), name: 'hoglens_widget');
+        if (!spec.compare || spec.kind != WidgetKind.number || !spec.hogql.contains('{range}')) return current;
+        final prevRange = StatRange(start: range.previousStart, end: range.start, label: range.label, kind: range.kind);
+        final prev = await client.query(project.projectId, StatsRepository.resolve(spec.hogql, prevRange), name: 'hoglens_widget_prev');
+        final pv = prev.firstCell;
+        return current.withPrevious(pv is num ? pv : num.tryParse('$pv'));
       },
     );
   }
@@ -324,3 +342,110 @@ class WidgetResultNotifier extends AsyncNotifier<QueryResult> {
 
 final widgetResultProvider =
     AsyncNotifierProvider.family<WidgetResultNotifier, QueryResult, CustomWidgetKey>(WidgetResultNotifier.new);
+
+// ---- live feed, errors, drill-downs ----------------------------------------
+
+typedef LiveFeedKey = (String projectId, String filter);
+
+/// Latest events, refreshed every ten seconds while watched.
+class LiveFeedNotifier extends AsyncNotifier<List<LiveEvent>> {
+  LiveFeedNotifier(this.key);
+  final LiveFeedKey key;
+
+  @override
+  Future<List<LiveEvent>> build() async {
+    final (projectId, filter) = key;
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    final timer = Timer(const Duration(seconds: 10), () => ref.invalidateSelf());
+    ref.onDispose(timer.cancel);
+    final client = await ref.watch(clientProvider(projectId).future);
+    return InsightsRepository(client, project.projectId).liveFeed(filter: filter);
+  }
+}
+
+final liveFeedProvider =
+    AsyncNotifierProvider.family<LiveFeedNotifier, List<LiveEvent>, LiveFeedKey>(LiveFeedNotifier.new);
+
+class ErrorsNotifier extends AsyncNotifier<ErrorsReport> {
+  ErrorsNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<ErrorsReport> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    final range = currentRange(ref);
+    return _cached<ErrorsReport>(
+      emit: (v) => state = AsyncData(v),
+      cache: ref.read(cacheProvider),
+      key: 'errors_${projectId}_${range.cacheKey}',
+      decode: (d, _) => ErrorsReport.fromJson(d),
+      encode: (v) => v.toJson(),
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return InsightsRepository(client, project.projectId).errors(range);
+      },
+    );
+  }
+}
+
+final errorsProvider = AsyncNotifierProvider.family<ErrorsNotifier, ErrorsReport, String>(ErrorsNotifier.new);
+
+typedef DrillKey = (String projectId, String event);
+
+final eventDrillProvider = FutureProvider.family<EventDrill, DrillKey>((ref, key) async {
+  final (projectId, event) = key;
+  final project = ref.watch(projectProvider(projectId));
+  if (project == null) throw PosthogException('Project removed.');
+  final client = await ref.watch(clientProvider(projectId).future);
+  return InsightsRepository(client, project.projectId).drill(event, currentRange(ref));
+});
+
+// ---- update check -------------------------------------------------------
+
+const _releasesLatest = 'https://api.github.com/repos/Diary-Axel-RAKOTOARIVAO/HogLens/releases/latest';
+
+/// Newer GitHub release than the running build, or null. Checked at most
+/// every six hours; failures are silent.
+final updateCheckProvider = FutureProvider<AppUpdate?>((ref) async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    final prefs = ref.read(storeProvider).prefs;
+    final last = prefs.getInt('hoglens.updateCheckAt') ?? 0;
+    final cachedTag = prefs.getString('hoglens.updateTag');
+    final cachedUrl = prefs.getString('hoglens.updateUrl');
+    final cachedNotes = prefs.getString('hoglens.updateNotes') ?? '';
+    final now = DateTime.now().millisecondsSinceEpoch;
+    String? tag = cachedTag;
+    String? url = cachedUrl;
+    String notes = cachedNotes;
+    if (now - last > 6 * 3600 * 1000) {
+      final res = await Dio(BaseOptions(receiveTimeout: const Duration(seconds: 10))).get(_releasesLatest);
+      final j = res.data as Map;
+      tag = j['tag_name'] as String?;
+      url = j['html_url'] as String?;
+      notes = j['body'] as String? ?? '';
+      await prefs.setInt('hoglens.updateCheckAt', now);
+      if (tag != null) await prefs.setString('hoglens.updateTag', tag);
+      if (url != null) await prefs.setString('hoglens.updateUrl', url);
+      await prefs.setString('hoglens.updateNotes', notes);
+    }
+    if (tag == null || url == null) return null;
+    final latest = tag.replaceFirst('v', '');
+    return _isNewer(latest, info.version) ? AppUpdate(version: latest, url: url, notes: notes) : null;
+  } catch (_) {
+    return null;
+  }
+});
+
+bool _isNewer(String a, String b) {
+  List<int> parts(String v) => v.split('.').map((x) => int.tryParse(x.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0).toList();
+  final pa = parts(a), pb = parts(b);
+  for (var i = 0; i < 3; i++) {
+    final x = i < pa.length ? pa[i] : 0;
+    final y = i < pb.length ? pb[i] : 0;
+    if (x != y) return x > y;
+  }
+  return false;
+}

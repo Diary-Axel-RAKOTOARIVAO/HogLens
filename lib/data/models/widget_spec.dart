@@ -28,6 +28,7 @@ class StatWidgetSpec {
     this.size = WidgetSize.half,
     this.subtitle,
     this.presetId,
+    this.compare = false,
   });
 
   final String id;
@@ -38,12 +39,17 @@ class StatWidgetSpec {
   final String? subtitle;
   final String? presetId;
 
+  /// Number widgets only: also run the query for the previous window and
+  /// show the change. Requires `{range}` in the query.
+  final bool compare;
+
   StatWidgetSpec copyWith({
     String? title,
     String? hogql,
     WidgetKind? kind,
     WidgetSize? size,
     String? subtitle,
+    bool? compare,
   }) =>
       StatWidgetSpec(
         id: id,
@@ -53,6 +59,7 @@ class StatWidgetSpec {
         size: size ?? this.size,
         subtitle: subtitle ?? this.subtitle,
         presetId: presetId,
+        compare: compare ?? this.compare,
       );
 
   Map<String, dynamic> toJson() => {
@@ -63,6 +70,7 @@ class StatWidgetSpec {
         'size': size.name,
         'subtitle': subtitle,
         'presetId': presetId,
+        'compare': compare,
       };
 
   factory StatWidgetSpec.fromJson(Map<String, dynamic> j) => StatWidgetSpec(
@@ -73,5 +81,6 @@ class StatWidgetSpec {
         size: WidgetSize.values.byName(j['size'] as String? ?? 'half'),
         subtitle: j['subtitle'] as String?,
         presetId: j['presetId'] as String?,
+        compare: j['compare'] as bool? ?? false,
       );
 }

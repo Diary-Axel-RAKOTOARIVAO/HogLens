@@ -267,10 +267,11 @@ class HeatStrip extends StatelessWidget {
 
 /// Ranked list with position numbers, share of total and fading bars.
 class RankedBars extends StatelessWidget {
-  const RankedBars({super.key, required this.rows, required this.color, this.maxRows = 8});
+  const RankedBars({super.key, required this.rows, required this.color, this.maxRows = 8, this.onTap});
   final List<(String, num)> rows;
   final Color color;
   final int maxRows;
+  final ValueChanged<String>? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -282,7 +283,10 @@ class RankedBars extends StatelessWidget {
     return Column(
       children: [
         for (var i = 0; i < shown.length; i++) ...[
-          Row(
+          InkWell(
+            onTap: onTap == null ? null : () => onTap!(shown[i].$1),
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
             children: [
               SizedBox(
                 width: 28,
@@ -323,7 +327,12 @@ class RankedBars extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onTap != null) ...[
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right, size: 16, color: c.textFaint),
+              ],
             ],
+          ),
           ),
           const SizedBox(height: 6),
           Padding(

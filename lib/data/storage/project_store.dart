@@ -16,6 +16,9 @@ class ProjectStore {
   final SharedPreferences _prefs;
   final FlutterSecureStorage _secure;
 
+  /// Shared preferences for small app-level flags.
+  SharedPreferences get prefs => _prefs;
+
   static const _projectsKey = 'ph.projects.v1';
   static const _widgetsKey = 'ph.widgets.v1';
   static String _keyFor(String id) => 'ph.apikey.$id';

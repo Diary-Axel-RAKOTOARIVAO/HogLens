@@ -8,6 +8,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoglens/data/api/insights_repository.dart';
 import 'package:hoglens/data/api/posthog_client.dart';
 import 'package:hoglens/data/api/stats_repository.dart';
 import 'package:hoglens/data/models/stats.dart';
@@ -57,6 +58,21 @@ void main() {
           expect(s.hourlySeries.length, 24);
         }, timeout: slow);
       }
+
+      test('live feed, errors and drill-down', () async {
+        final repo = InsightsRepository(client, id);
+        final r = RangeSelection.week.resolve(DateTime.now());
+        final live = await repo.liveFeed();
+        print('live → ${live.length} events, newest ${live.isEmpty ? '-' : '${live.first.event} @ ${live.first.at} ${live.first.path}'}');
+        final filtered = await repo.liveFeed(filter: 'pageview');
+        print('live(filter) → ${filtered.length}, all pageview: ${filtered.every((e) => e.event.contains('pageview'))}');
+        final errors = await repo.errors(r);
+        print('errors → total ${errors.total}, people ${errors.people}, groups ${errors.groups.length}, series ${errors.series.length}; top: ${errors.groups.take(2).map((g) => '${g.type}: ${g.message.substring(0, g.message.length.clamp(0, 40))} (${g.count})').join(' | ')}');
+        expect(errors.series.length, r.bucketCount);
+        final drill = await repo.drill('\$pageview', r);
+        print('drill → count ${drill.count}, people ${drill.people}, series ${drill.series.length}, paths ${drill.topPaths.take(3)}, browsers ${drill.topBrowsers.take(2)}');
+        expect(drill.series.length, r.bucketCount);
+      }, timeout: slow);
 
       test('flags', () async {
         final f = await client.listFlags(id);

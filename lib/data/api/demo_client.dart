@@ -35,6 +35,36 @@ class DemoClient implements PhApi {
       }
       return QueryResult(columns: const ['bucket', 'count'], rows: rows);
     }
+    if (name == 'hoglens_live') {
+      return QueryResult(columns: const ['event', 'distinct_id', 'timestamp', 'path', 'browser', 'os'], rows: [
+        for (var i = 0; i < 40; i++)
+          [
+            const ['\$pageview', 'listing viewed', 'search performed', '\$autocapture', 'booking started', '\$exception'][i % 6],
+            'user_${1000 + (i * 137) % 900}',
+            now.subtract(Duration(seconds: i * 23 + _rng.nextInt(20))).toUtc().toIso8601String(),
+            const ['/', '/recherche', '/listing/1182', '/pricing', '/login'][i % 5],
+            const ['Chrome', 'Safari', 'Firefox'][i % 3],
+            const ['Android', 'iOS', 'Windows'][i % 3],
+          ],
+      ]);
+    }
+    if (name == 'hoglens_errors') {
+      return QueryResult(columns: const ['type', 'message', 'c', 'people', 'first', 'last'], rows: [
+        ['TypeError', 'Failed to fetch dynamically imported module: /_app/immutable/nodes/1.js', 412, 301, now.subtract(const Duration(days: 6)).toUtc().toIso8601String(), now.subtract(const Duration(minutes: 12)).toUtc().toIso8601String()],
+        ['Error', 'Error invoking postMessage: Java object is gone', 188, 140, now.subtract(const Duration(days: 20)).toUtc().toIso8601String(), now.subtract(const Duration(hours: 3)).toUtc().toIso8601String()],
+        ['NetworkError', 'Load failed', 96, 88, now.subtract(const Duration(days: 2)).toUtc().toIso8601String(), now.subtract(const Duration(hours: 1)).toUtc().toIso8601String()],
+        ['RangeError', 'Maximum call stack size exceeded', 14, 9, now.subtract(const Duration(days: 1)).toUtc().toIso8601String(), now.subtract(const Duration(hours: 9)).toUtc().toIso8601String()],
+      ]);
+    }
+    if (name == 'hoglens_drill_summary') {
+      return const QueryResult(columns: ['c', 'u'], rows: [[19870, 2980]]);
+    }
+    if (name == 'hoglens_drill_paths') {
+      return const QueryResult(columns: ['p', 'c'], rows: [['/', 8210], ['/recherche', 4120], ['/listing/1182', 1330], ['/pricing', 980], ['/login', 760]]);
+    }
+    if (name == 'hoglens_drill_browsers') {
+      return const QueryResult(columns: ['b', 'c'], rows: [['Chrome', 9120], ['Safari', 6410], ['Firefox', 2420], ['Edge', 1260]]);
+    }
     if (name == 'hoglens_summary') {
       return const QueryResult(
         columns: ['e', 'ep', 'vis', 'visp', 'views', 'viewsp', 's', 'sp', 'live'],

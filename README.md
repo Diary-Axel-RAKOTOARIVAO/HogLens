@@ -9,7 +9,11 @@ A clean, native-feeling PostHog companion for iOS and Android, built with Flutte
 - Key stats per project with deltas versus the previous period: events, active users, pageviews, sessions, events per user, and people active in the last five minutes.
 - Events trend chart and top events, switchable between 24h / 7d / 30d.
 - Custom widgets backed by any HogQL query, rendered as a number, trend, bar list or table, half or full width, reorderable. A preset gallery gets you started.
+- Live feed of the newest events, refreshed every ten seconds, with a filter by event name.
+- Errors screen grouping `$exception` events by type and message with counts, people affected and a trend.
+- Tap a top event to see its trend, reach, top pages and browsers over the window.
 - Feature flags list per project.
+- Home screen totals across all projects and an update banner when a newer GitHub release exists.
 - Light and dark themes follow the system.
 - A demo project with fake data lets you explore without a key.
 
@@ -30,7 +34,7 @@ Widgets run a HogQL query through `POST /api/projects/:id/query/`. Use `{range}`
 SELECT count() FROM events WHERE event = 'user signed up' AND timestamp >= {range}
 ```
 
-- **Number** shows the first cell of the first row.
+- **Number** shows the first cell of the first row. Turn on "Compare with previous period" to also show the change versus the window before.
 - **Trend** expects rows of `(time, value)`.
 - **Bars** expects rows of `(label, value)`.
 - **Table** renders the raw result, up to ten rows.

@@ -171,7 +171,31 @@ class CustomWidgetTile extends ConsumerWidget {
     switch (spec.kind) {
       case WidgetKind.number:
         final v = r.firstCell;
-        return v is num ? AnimatedBigValue(v, format: Fmt.compact) : BigValue(v?.toString() ?? '—');
+        final delta = r.delta;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            v is num ? AnimatedBigValue(v, format: Fmt.compact) : BigValue(v?.toString() ?? '—'),
+            if (spec.compare) ...[
+              const SizedBox(height: 4),
+              delta == null
+                  ? Text('No previous data', style: TextStyle(fontSize: 12, color: c.textFaint))
+                  : Text.rich(
+                      TextSpan(children: [
+                        TextSpan(
+                          text: Fmt.percent(delta),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: delta == 0 ? c.textMuted : (delta > 0 ? c.positive : c.negative),
+                          ),
+                        ),
+                        TextSpan(text: ' vs previous', style: TextStyle(color: c.textMuted)),
+                      ]),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+            ],
+          ],
+        );
       case WidgetKind.sparkline:
         final pts = <SeriesPoint>[];
         for (final row in r.rows) {

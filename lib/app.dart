@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import 'core/theme/app_theme.dart';
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/errors/errors_screen.dart';
+import 'features/live/live_feed_screen.dart';
 import 'features/flags/flags_screen.dart';
 import 'features/projects/add_project_screen.dart';
 import 'features/projects/home_screen.dart';
@@ -23,6 +25,14 @@ final _router = GoRouter(
             GoRoute(
               path: 'flags',
               builder: (_, s) => FlagsScreen(projectId: s.pathParameters['id']!),
+            ),
+            GoRoute(
+              path: 'live',
+              builder: (_, s) => LiveFeedScreen(projectId: s.pathParameters['id']!),
+            ),
+            GoRoute(
+              path: 'errors',
+              builder: (_, s) => ErrorsScreen(projectId: s.pathParameters['id']!),
             ),
             GoRoute(
               path: 'settings',

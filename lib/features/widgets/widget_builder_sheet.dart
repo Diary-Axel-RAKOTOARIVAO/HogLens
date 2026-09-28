@@ -228,6 +228,31 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
           ),
         ],
       ),
+      if (d.kind == WidgetKind.number) ...[
+        const SizedBox(height: 14),
+        Card1(
+          radius: 16,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Compare with previous period', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    Text('Runs the query again for the window before', style: TextStyle(fontSize: 12, color: c.textMuted)),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: d.compare,
+                activeTrackColor: c.text,
+                onChanged: (v) => setState(() => _draft = d.copyWith(compare: v)),
+              ),
+            ],
+          ),
+        ),
+      ],
       const SizedBox(height: 18),
       Text('HOGQL', style: Theme.of(context).textTheme.labelSmall),
       const SizedBox(height: 8),

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
@@ -72,9 +73,13 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             )
-          else
+          else ...[
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(Spacing.page, 8, Spacing.page, 40),
+              padding: const EdgeInsets.fromLTRB(Spacing.page, 4, Spacing.page, 12),
+              sliver: SliverToBoxAdapter(child: _Overview(projects: projects)),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 40),
               sliver: SliverReorderableList(
                 itemCount: projects.length,
                 onReorderItem: (a, b) => ref.read(projectsProvider.notifier).reorder(a, b),
@@ -95,6 +100,7 @@ class HomeScreen extends ConsumerWidget {
                 },
               ),
             ),
+          ],
           if (projects.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -108,6 +114,90 @@ class HomeScreen extends ConsumerWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Totals across every project from the glance data already loaded, plus a
+/// banner when a newer GitHub release exists.
+class _Overview extends ConsumerWidget {
+  const _Overview({required this.projects});
+  final List<PhProject> projects;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    num today = 0, week = 0;
+    var loaded = 0;
+    for (final p in projects) {
+      final g = ref.watch(glanceProvider(p.id)).value;
+      if (g == null) continue;
+      loaded++;
+      today += g.isEmpty ? 0 : g.last;
+      week += g.fold<num>(0, (a, b) => a + b);
+    }
+    final update = ref.watch(updateCheckProvider).value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (update != null) ...[
+          Card1(
+            radius: 20,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            onTap: () => launchUrl(Uri.parse(update.url), mode: LaunchMode.externalApplication),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(color: c.text, borderRadius: BorderRadius.circular(11)),
+                  child: Icon(SolarIconsOutline.download, size: 18, color: c.bg),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('HogLens ${update.version} is out', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+                      Text('Tap to open the release and download the APK', style: TextStyle(fontSize: 12, color: c.textMuted)),
+                    ],
+                  ),
+                ),
+                Icon(SolarIconsOutline.altArrowRight, size: 18, color: c.textFaint),
+              ],
+            ),
+          ),
+          const SizedBox(height: Spacing.gap),
+        ],
+        Card1(
+          radius: 20,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('TODAY, ALL PROJECTS', style: Theme.of(context).textTheme.labelSmall),
+                    const SizedBox(height: 6),
+                    loaded == 0 ? const Skeleton(width: 80, height: 26) : AnimatedBigValue(today, format: Fmt.compact, size: 26),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('LAST 7 DAYS', style: Theme.of(context).textTheme.labelSmall),
+                    const SizedBox(height: 6),
+                    loaded == 0 ? const Skeleton(width: 80, height: 26) : AnimatedBigValue(week, format: Fmt.compact, size: 26),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

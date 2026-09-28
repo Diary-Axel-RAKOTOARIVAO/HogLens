@@ -14,6 +14,7 @@ import '../../shared/ui.dart';
 import '../widgets/custom_widget_tile.dart';
 import '../widgets/widget_builder_sheet.dart';
 import 'charts.dart';
+import 'event_drill_sheet.dart';
 import 'range_sheet.dart';
 
 enum HeroMode { unique, all }
@@ -69,6 +70,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
               const SizedBox(height: 18),
+              _MenuRow(
+                icon: SolarIconsOutline.pulse,
+                label: 'Live feed',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/p/${project.id}/live');
+                },
+              ),
+              const SizedBox(height: 8),
+              _MenuRow(
+                icon: SolarIconsOutline.dangerTriangle,
+                label: 'Errors',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/p/${project.id}/errors');
+                },
+              ),
+              const SizedBox(height: 8),
               _MenuRow(
                 icon: SolarIconsOutline.flag,
                 label: 'Feature flags',
@@ -399,6 +418,7 @@ class _KeyStats extends StatelessWidget {
             const SizedBox(width: Spacing.gap),
             Expanded(
               child: _Tile(
+                onTap: () => context.push('/p/${project.id}/live'),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -495,7 +515,11 @@ class _KeyStats extends StatelessWidget {
               ),
               if (stats.topEvents.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                RankedBars(rows: stats.topEvents.map((e) => (e.name, e.count)).toList(), color: project.accent),
+                RankedBars(
+                  rows: stats.topEvents.map((e) => (e.name, e.count)).toList(),
+                  color: project.accent,
+                  onTap: (name) => showEventDrill(context, projectId: project.id, event: name),
+                ),
               ],
             ],
           ),
@@ -666,14 +690,15 @@ class _TrendRow extends StatelessWidget {
 
 /// Square secondary tile.
 class _Tile extends StatelessWidget {
-  const _Tile({required this.child});
+  const _Tile({required this.child, this.onTap});
   final Widget child;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: 1,
-      child: Card1(radius: Radii.tile, padding: const EdgeInsets.all(18), child: child),
+      child: Card1(radius: Radii.tile, padding: const EdgeInsets.all(18), onTap: onTap, child: child),
     );
   }
 }
