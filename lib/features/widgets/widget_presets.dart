@@ -27,8 +27,8 @@ class WidgetPreset {
       );
 }
 
-/// Starting points for custom widgets. `{range}` is swapped for the
-/// dashboard range at query time.
+/// Starting points for custom widgets. `{range}` is swapped for the start
+/// of the dashboard window at query time (`{range_end}` for its end).
 const List<WidgetPreset> widgetPresets = [
   WidgetPreset(
     id: 'signups',

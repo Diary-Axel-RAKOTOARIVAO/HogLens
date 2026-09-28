@@ -29,8 +29,26 @@ void main() {
     expect(back.size, WidgetSize.full);
   });
 
-  test('range placeholder resolves', () {
-    expect(StatsRepository.resolve('WHERE t >= {range}', StatRange.month), 'WHERE t >= now() - INTERVAL 30 DAY');
+  test('range placeholder resolves to the window start', () {
+    final r = RangeSelection.week.resolve(DateTime(2026, 9, 28, 12));
+    expect(StatsRepository.resolve('WHERE t >= {range}', r), startsWith("WHERE t >= toDateTime('2026-09-21"));
+    expect(r.bucketCount, 8);
+    expect(r.hourly, isFalse);
+  });
+
+  test('this month and custom ranges resolve', () {
+    final now = DateTime(2026, 9, 28, 12);
+    final m = RangeSelection.thisMonth.resolve(now);
+    expect(m.start, DateTime(2026, 9, 1));
+    expect(m.label, 'September');
+    expect(m.bucketCount, 28);
+    final c = RangeSelection(RangeKind.custom, customStart: DateTime(2026, 9, 3), customEnd: DateTime(2026, 9, 9)).resolve(now);
+    expect(c.start, DateTime(2026, 9, 3));
+    expect(c.end, DateTime(2026, 9, 10));
+    expect(c.bucketCount, 7);
+    expect(c.label, 'Sep 3 – Sep 9');
+    expect(RangeSelection.day.resolve(now).hourly, isTrue);
+    expect(RangeSelection.day.resolve(now).bucketCount, 24);
   });
 
   test('metric delta', () {

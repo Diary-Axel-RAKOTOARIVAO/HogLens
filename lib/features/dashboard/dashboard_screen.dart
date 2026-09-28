@@ -15,7 +15,7 @@ import '../widgets/custom_widget_tile.dart';
 import '../widgets/widget_builder_sheet.dart';
 import 'charts.dart';
 
-const _tileHeight = 236.0;
+enum HeroMode { unique, all }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key, required this.projectId});
@@ -27,6 +27,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _editing = false;
+  HeroMode _hero = HeroMode.unique;
 
   Future<void> _refresh() async {
     ref.invalidate(keyStatsProvider(widget.projectId));
@@ -45,7 +46,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final project = ref.watch(projectProvider(widget.projectId));
     if (project == null) return const Scaffold();
     final c = context.colors;
-    final range = ref.watch(rangeProvider);
+    final selection = ref.watch(rangeProvider);
     final stats = ref.watch(keyStatsProvider(widget.projectId));
     final widgets = ref.watch(projectWidgetsProvider(widget.projectId));
 
@@ -102,11 +103,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               padding: const EdgeInsets.fromLTRB(Spacing.page, 8, Spacing.page, 110),
               sliver: SliverList.list(
                 children: [
-                  _RangeBar(range: range, activeNow: stats.value?.activeNow),
+                  _RangeBar(selection: selection),
                   const SizedBox(height: 16),
                   stats.when(
                     skipLoadingOnRefresh: true,
-                    data: (s) => _KeyStats(stats: s, project: project, range: range),
+                    data: (s) => _KeyStats(
+                      stats: s,
+                      project: project,
+                      hero: _hero,
+                      onHeroChanged: (m) => setState(() => _hero = m),
+                    ),
                     loading: () => const _KeyStatsSkeleton(),
                     error: (e, _) => ErrorCard(message: '$e', onRetry: _refresh),
                   ),
@@ -164,106 +170,138 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 }
 
 class _RangeBar extends ConsumerWidget {
-  const _RangeBar({required this.range, this.activeNow});
-  final StatRange range;
-  final num? activeNow;
+  const _RangeBar({required this.selection});
+  final RangeSelection selection;
+
+  Future<void> _pickCustom(BuildContext context, WidgetRef ref) async {
+    final now = DateTime.now();
+    final initial = selection.kind == RangeKind.custom && selection.customStart != null
+        ? DateTimeRange(start: selection.customStart!, end: selection.customEnd ?? now)
+        : DateTimeRange(start: now.subtract(const Duration(days: 6)), end: now);
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 2),
+      lastDate: now,
+      initialDateRange: initial,
+      helpText: 'Custom range',
+      builder: (context, child) {
+        final c = context.colors;
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: c.text,
+              onPrimary: c.bg,
+              primaryContainer: c.surface,
+              onPrimaryContainer: c.text,
+              surface: c.bg,
+              onSurface: c.text,
+              onSurfaceVariant: c.textMuted,
+              secondaryContainer: c.surface,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      ref.read(rangeProvider.notifier).set(RangeSelection(RangeKind.custom, customStart: picked.start, customEnd: picked.end));
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.chip)),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final r in StatRange.values)
-                GestureDetector(
-                  onTap: () => ref.read(rangeProvider.notifier).set(r),
-                  child: AnimatedContainer(
-                    duration: 180.ms,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                    decoration: BoxDecoration(
-                      color: r == range ? c.text : Colors.transparent,
-                      borderRadius: BorderRadius.circular(Radii.chip),
-                    ),
-                    child: Text(
-                      r.label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: r == range ? c.bg : c.textMuted,
-                      ),
-                    ),
-                  ),
+    final now = DateTime.now();
+    Widget pill(String label, bool selected, VoidCallback onTap, {IconData? icon}) => GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: 180.ms,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            decoration: BoxDecoration(
+              color: selected ? c.text : Colors.transparent,
+              borderRadius: BorderRadius.circular(Radii.chip),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 15, color: selected ? c.bg : c.textMuted),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? c.bg : c.textMuted),
                 ),
-            ],
+              ],
+            ),
           ),
+        );
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.none,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.chip)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final r in RangeSelection.presets)
+              pill(r.label(now), selection == r, () => ref.read(rangeProvider.notifier).set(r)),
+            pill(
+              selection.kind == RangeKind.custom ? selection.label(now) : 'Custom',
+              selection.kind == RangeKind.custom,
+              () => _pickCustom(context, ref),
+              icon: SolarIconsOutline.calendar,
+            ),
+          ],
         ),
-        const Spacer(),
-        if (activeNow != null)
-          Row(
-            children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: c.positive, shape: BoxShape.circle))
-                  .animate(onPlay: (ctl) => ctl.repeat(reverse: true))
-                  .fade(begin: 0.4, end: 1, duration: 900.ms),
-              const SizedBox(width: 8),
-              Text(
-                '${Fmt.full(activeNow)} live',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.textMuted),
-              ),
-            ],
-          ),
-      ],
+      ),
     );
   }
 }
 
 class _KeyStats extends StatelessWidget {
-  const _KeyStats({required this.stats, required this.project, required this.range});
+  const _KeyStats({required this.stats, required this.project, required this.hero, required this.onHeroChanged});
   final KeyStats stats;
   final PhProject project;
-  final StatRange range;
+  final HeroMode hero;
+  final ValueChanged<HeroMode> onHeroChanged;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final start = DateTime.now().subtract(Duration(days: range.days - 1));
-    final end = DateTime.now();
-    final rangeLabel = range == StatRange.day ? 'Last 24 hours' : '${Fmt.monthDay(start)} – ${Fmt.monthDay(end)}';
-    final peak = stats.hourlySeries.isEmpty
-        ? null
-        : stats.hourlySeries.reduce((a, b) => b.v > a.v ? b : a);
+    final range = stats.range;
+    final rangeLabel = range.kind == RangeKind.day
+        ? 'Last 24 hours'
+        : '${Fmt.monthDay(range.start)} – ${Fmt.monthDay(range.end.subtract(const Duration(seconds: 1)))}';
+    final peak = stats.hourlySeries.isEmpty ? null : stats.hourlySeries.reduce((a, b) => b.v > a.v ? b : a);
     final sessions = stats.sessions.current;
-    final users = stats.users.current;
+    final visitors = stats.visitors.current;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _HeroCard(stats: stats, project: project, range: range).animate().fadeIn(duration: 300.ms),
+        _HeroCard(stats: stats, project: project, mode: hero, onModeChanged: onHeroChanged)
+            .animate()
+            .fadeIn(duration: 300.ms),
         const SizedBox(height: Spacing.gap),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: _Tile(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CardLabel('Active users', icon: SolarIconsOutline.usersGroupRounded),
-                    const SizedBox(height: 14),
-                    BigValue(Fmt.compact(users)),
-                    const SizedBox(height: 4),
-                    _DeltaLine(stats.users.delta, suffix: 'vs previous'),
+                    const CardLabel('Events', icon: SolarIconsOutline.chartSquare),
+                    const SizedBox(height: 10),
+                    BigValue(Fmt.compact(stats.events.current), size: 28),
+                    const SizedBox(height: 2),
+                    _DeltaLine(stats.events.delta, suffix: 'vs previous'),
                     const Spacer(),
-                    MiniBars(values: stats.userSeries.map((p) => p.v).toList(), color: project.accent),
-                    const SizedBox(height: 8),
-                    Text(
-                      range.bucket == 'hour' ? 'Per hour' : 'Per day',
-                      style: TextStyle(color: c.textMuted, fontSize: 13),
-                    ),
+                    MiniBars(values: stats.eventSeries.map((p) => p.v).toList(), color: project.accent, height: 40, gap: 3),
+                    const SizedBox(height: 6),
+                    Text(range.hourly ? 'Per hour' : 'Per day', style: TextStyle(color: c.textMuted, fontSize: 12.5)),
                   ],
                 ),
               ),
@@ -275,26 +313,26 @@ class _KeyStats extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const CardLabel('Live pulse', icon: SolarIconsOutline.pulse),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
                       children: [
-                        BigValue(Fmt.full(stats.activeNow)),
-                        const SizedBox(width: 8),
-                        Text('on site', style: TextStyle(color: c.textMuted, fontSize: 15)),
+                        BigValue(Fmt.full(stats.activeNow), size: 28),
+                        const SizedBox(width: 6),
+                        Text('on site', style: TextStyle(color: c.textMuted, fontSize: 14)),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text('Last 5 minutes', style: TextStyle(color: c.textMuted, fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Text('Last 5 minutes', style: TextStyle(color: c.textMuted, fontSize: 13)),
                     const Spacer(),
-                    HeatStrip(points: stats.hourlySeries, color: project.accent),
+                    HeatStrip(points: stats.hourlySeries, color: project.accent, compact: true),
                     const SizedBox(height: 6),
                     Text(
-                      peak == null ? 'No activity in 24h' : 'Peak ${Fmt.hour(peak.t)} · ${Fmt.compact(peak.v)}',
+                      peak == null ? 'Quiet 24h' : 'Peak ${Fmt.hour(peak.t)} · ${Fmt.compact(peak.v)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: c.textMuted, fontSize: 13),
+                      style: TextStyle(color: c.textMuted, fontSize: 12.5),
                     ),
                   ],
                 ),
@@ -304,7 +342,6 @@ class _KeyStats extends StatelessWidget {
         ).animate().fadeIn(duration: 300.ms, delay: 60.ms),
         const SizedBox(height: Spacing.gap),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: _Tile(
@@ -312,14 +349,14 @@ class _KeyStats extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const CardLabel('Sessions', icon: SolarIconsOutline.cursor),
-                    const SizedBox(height: 14),
-                    BigValue(Fmt.compact(sessions)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 10),
+                    BigValue(Fmt.compact(sessions), size: 28),
+                    const SizedBox(height: 2),
                     _DeltaLine(stats.sessions.delta, suffix: 'vs previous'),
                     const Spacer(),
-                    KeyValueRow('Events / session', sessions == 0 ? '—' : (stats.events.current / sessions).toStringAsFixed(1)),
-                    KeyValueRow('Pages / session', sessions == 0 ? '—' : (stats.pageviews.current / sessions).toStringAsFixed(1)),
-                    KeyValueRow('Sessions / user', users == 0 ? '—' : (sessions / users).toStringAsFixed(1)),
+                    KeyValueRow('Events / session', sessions == 0 ? '—' : (stats.events.current / sessions).toStringAsFixed(1), compact: true),
+                    KeyValueRow('Views / session', sessions == 0 ? '—' : (stats.views.current / sessions).toStringAsFixed(1), compact: true),
+                    KeyValueRow('Sessions / visitor', visitors == 0 ? '—' : (sessions / visitors).toStringAsFixed(1), compact: true),
                   ],
                 ),
               ),
@@ -330,15 +367,15 @@ class _KeyStats extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CardLabel('Trends · ${range.label}', icon: SolarIconsOutline.graphUp),
-                    const SizedBox(height: 10),
+                    const CardLabel('Trends', icon: SolarIconsOutline.graphUp),
+                    const SizedBox(height: 4),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
+                          _TrendRow('Visitors', stats.visitors),
+                          _TrendRow('Views', stats.views),
                           _TrendRow('Events', stats.events),
-                          _TrendRow('Users', stats.users),
-                          _TrendRow('Pageviews', stats.pageviews),
                           _TrendRow('Sessions', stats.sessions),
                         ],
                       ),
@@ -378,13 +415,14 @@ class _KeyStats extends StatelessWidget {
   }
 }
 
-/// Full-width card in the project accent with the events number and a
-/// white sparkline. Ink accent falls back to the text color.
+/// Full-width card in the project accent showing unique visitors, or all
+/// views when toggled, with a white sparkline of the same series.
 class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.stats, required this.project, required this.range});
+  const _HeroCard({required this.stats, required this.project, required this.mode, required this.onModeChanged});
   final KeyStats stats;
   final PhProject project;
-  final StatRange range;
+  final HeroMode mode;
+  final ValueChanged<HeroMode> onModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -392,9 +430,30 @@ class _HeroCard extends StatelessWidget {
     final ink = project.accentIndex == Accents.all.length - 1;
     final bg = ink ? c.text : project.accent;
     final fg = ink ? c.bg : Colors.white;
-    final delta = stats.events.delta;
+    final unique = mode == HeroMode.unique;
+    final metric = unique ? stats.visitors : stats.views;
+    final series = unique ? stats.visitorSeries : stats.viewSeries;
+    final delta = metric.delta;
+    final range = stats.range;
+
+    Widget seg(String label, HeroMode m) => GestureDetector(
+          onTap: () => onModeChanged(m),
+          child: AnimatedContainer(
+            duration: 180.ms,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: mode == m ? fg : Colors.transparent,
+              borderRadius: BorderRadius.circular(Radii.chip),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(color: mode == m ? bg : fg, fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        );
+
     return SizedBox(
-      height: 250,
+      height: 260,
       child: Card1(
         color: bg,
         clip: true,
@@ -405,13 +464,14 @@ class _HeroCard extends StatelessWidget {
               left: 0,
               right: 0,
               bottom: 0,
-              height: 120,
+              height: 116,
               child: TrendChart(
-                points: stats.eventSeries,
+                key: ValueKey(mode),
+                points: series,
                 color: fg,
-                height: 120,
+                height: 116,
                 bare: true,
-                hourly: range.bucket == 'hour',
+                hourly: range.hourly,
               ),
             ),
             Padding(
@@ -421,33 +481,42 @@ class _HeroCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(SolarIconsOutline.chartSquare, size: 20, color: fg.withValues(alpha: 0.8)),
+                      Icon(SolarIconsOutline.usersGroupRounded, size: 20, color: fg.withValues(alpha: 0.8)),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'EVENTS · ${range.label.toUpperCase()}',
+                          (unique ? 'Unique visitors' : 'Views').toUpperCase(),
                           style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12, letterSpacing: 1.6, fontWeight: FontWeight.w500),
                         ),
                       ),
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(color: fg.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(Radii.chip)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [seg('Unique', HeroMode.unique), seg('All', HeroMode.all)]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      BigValue(Fmt.compact(metric.current), size: 44, color: fg),
+                      const SizedBox(width: 12),
                       if (delta != null)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: fg.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(Radii.chip),
-                          ),
-                          child: Text(
-                            Fmt.percent(delta),
-                            style: TextStyle(color: fg, fontSize: 13, fontWeight: FontWeight.w700),
-                          ),
+                          decoration: BoxDecoration(color: fg.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(Radii.chip)),
+                          child: Text(Fmt.percent(delta), style: TextStyle(color: fg, fontSize: 13, fontWeight: FontWeight.w700)),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  BigValue(Fmt.compact(stats.events.current), size: 44, color: fg),
                   const SizedBox(height: 6),
                   Text(
-                    '${Fmt.compact(stats.events.previous)} in the previous ${range.label} · ${Fmt.compact(stats.pageviews.current)} pageviews',
+                    unique
+                        ? '${Fmt.compact(metric.previous)} in the previous period · ${Fmt.compact(stats.views.current)} views'
+                        : '${Fmt.compact(metric.previous)} in the previous period · ${Fmt.compact(stats.visitors.current)} unique',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 14),
                   ),
                 ],
@@ -515,13 +584,17 @@ class _TrendRow extends StatelessWidget {
   }
 }
 
+/// Square secondary tile.
 class _Tile extends StatelessWidget {
   const _Tile({required this.child});
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(height: _tileHeight, child: Card1(radius: Radii.tile, child: child));
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Card1(radius: Radii.tile, padding: const EdgeInsets.all(18), child: child),
+    );
   }
 }
 
@@ -544,22 +617,25 @@ class _KeyStatsSkeleton extends StatelessWidget {
         );
     return Column(
       children: [
-        Row(children: [Expanded(child: tile()), const SizedBox(width: Spacing.gap), Expanded(child: tile())]),
-        const SizedBox(height: Spacing.gap),
-        Row(children: [Expanded(child: tile()), const SizedBox(width: Spacing.gap), Expanded(child: tile())]),
-        const SizedBox(height: Spacing.gap),
-        const Card1(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Skeleton(width: 120, height: 14),
-              SizedBox(height: 16),
-              Skeleton(width: 160, height: 28),
-              SizedBox(height: 20),
-              Skeleton(height: 120, radius: 12),
-            ],
+        const SizedBox(
+          height: 260,
+          child: Card1(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Skeleton(width: 140, height: 14),
+                SizedBox(height: 18),
+                Skeleton(width: 160, height: 44),
+                Spacer(),
+                Skeleton(height: 90, radius: 12),
+              ],
+            ),
           ),
         ),
+        const SizedBox(height: Spacing.gap),
+        Row(children: [Expanded(child: tile()), const SizedBox(width: Spacing.gap), Expanded(child: tile())]),
+        const SizedBox(height: Spacing.gap),
+        Row(children: [Expanded(child: tile()), const SizedBox(width: Spacing.gap), Expanded(child: tile())]),
       ],
     );
   }

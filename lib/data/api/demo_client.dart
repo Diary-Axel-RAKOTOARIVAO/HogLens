@@ -37,24 +37,26 @@ class DemoClient implements PhApi {
     }
     if (name == 'hoglens_summary') {
       return const QueryResult(
-        columns: ['e', 'ep', 'u', 'up', 'p', 'pp', 's', 'sp', 'live'],
-        rows: [[48213, 41980, 3120, 3344, 19870, 17210, 5410, 5102, 23]],
+        columns: ['e', 'ep', 'vis', 'visp', 'views', 'viewsp', 's', 'sp', 'live'],
+        rows: [[48213, 41980, 2980, 3210, 19870, 17210, 5410, 5102, 23]],
       );
     }
     if (q.contains('tostartofhour') || q.contains('tostartofday')) {
       final hourly = q.contains('tostartofhour');
-      final n = hourly ? 24 : (q.contains('interval 30') ? 30 : 7);
+      // Window from the toDateTime literals when present, else a default.
+      final lits = RegExp(r"todatetime\('([^']+)'\)").allMatches(q).map((m) => DateTime.parse('${m.group(1)}Z').toLocal()).toList();
+      final end = lits.length >= 2 ? lits[1] : now;
+      final start = lits.isNotEmpty ? lits[0] : (hourly ? now.subtract(const Duration(hours: 24)) : now.subtract(const Duration(days: 7)));
       final rows = <List<dynamic>>[];
-      for (var i = n - 1; i >= 0; i--) {
-        final t = hourly
-            ? DateTime(now.year, now.month, now.day, now.hour).subtract(Duration(hours: i))
-            : DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
+      var t = hourly ? DateTime(start.year, start.month, start.day, start.hour) : DateTime(start.year, start.month, start.day);
+      while (t.isBefore(end)) {
         final phase = hourly ? (t.hour - 14).abs() / 14 : (t.weekday >= 6 ? 0.55 : 1.0);
         final base = hourly ? 2600 : 7200;
         final v = (base * (1 - 0.5 * phase) * (0.85 + _rng.nextDouble() * 0.3)).round();
-        rows.add([t.toIso8601String(), v, (v * 0.09).round()]);
+        rows.add([t.toUtc().toIso8601String(), v, (v * 0.062).round(), (v * 0.41).round()]);
+        t = hourly ? t.add(const Duration(hours: 1)) : DateTime(t.year, t.month, t.day + 1);
       }
-      return QueryResult(columns: const ['bucket', 'count', 'uniq'], rows: rows);
+      return QueryResult(columns: const ['bucket', 'count', 'visitors', 'views'], rows: rows);
     }
     if (name == 'hoglens_top' || q.contains('group by event')) {
       return const QueryResult(columns: ['event', 'c'], rows: [

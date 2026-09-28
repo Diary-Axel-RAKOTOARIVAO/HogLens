@@ -105,20 +105,23 @@ final clientProvider = FutureProvider.family<PhApi, String>((ref, projectId) asy
 
 // ---- range & stats ------------------------------------------------------
 
-class RangeNotifier extends Notifier<StatRange> {
+class RangeNotifier extends Notifier<RangeSelection> {
   @override
-  StatRange build() => StatRange.week;
-  void set(StatRange r) => state = r;
+  RangeSelection build() => RangeSelection.week;
+  void set(RangeSelection r) => state = r;
 }
 
-final rangeProvider = NotifierProvider<RangeNotifier, StatRange>(RangeNotifier.new);
+final rangeProvider = NotifierProvider<RangeNotifier, RangeSelection>(RangeNotifier.new);
+
+/// The selection resolved against "now". Re-resolved whenever the selection
+/// changes or a dependent provider is invalidated.
+StatRange currentRange(Ref ref) => ref.watch(rangeProvider).resolve(DateTime.now());
 
 final keyStatsProvider = FutureProvider.family<KeyStats, String>((ref, projectId) async {
   final project = ref.watch(projectProvider(projectId));
   if (project == null) throw PosthogException('Project removed.');
   final client = await ref.watch(clientProvider(projectId).future);
-  final range = ref.watch(rangeProvider);
-  return StatsRepository(client, project.projectId).fetch(range);
+  return StatsRepository(client, project.projectId).fetch(currentRange(ref));
 });
 
 /// Daily event counts for the last 7 days (last element is today), used by
@@ -140,7 +143,7 @@ final glanceProvider = FutureProvider.family<List<num>, String>((ref, projectId)
     final v = row.length > 1 ? row[1] : 0;
     if (t != null) pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
   }
-  return StatsRepository.fill(pts, StatRange.week).map((p) => p.v).toList();
+  return StatsRepository.fill(pts, RangeSelection.week.resolve(DateTime.now())).map((p) => p.v).toList();
 });
 
 final flagsProvider = FutureProvider.family<List<FeatureFlag>, String>((ref, projectId) async {
@@ -214,6 +217,5 @@ final widgetResultProvider = FutureProvider.family<QueryResult, CustomWidgetKey>
   );
   if (project == null || spec == null) throw PosthogException('Widget removed.');
   final client = await ref.watch(clientProvider(projectId).future);
-  final range = ref.watch(rangeProvider);
-  return client.query(project.projectId, StatsRepository.resolve(spec.hogql, range), name: 'hoglens_widget');
+  return client.query(project.projectId, StatsRepository.resolve(spec.hogql, currentRange(ref)), name: 'hoglens_widget');
 });

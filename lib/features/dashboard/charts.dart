@@ -218,9 +218,10 @@ class MiniBars extends StatelessWidget {
 
 /// 24 cells shaded by intensity, one per hour.
 class HeatStrip extends StatelessWidget {
-  const HeatStrip({super.key, required this.points, required this.color});
+  const HeatStrip({super.key, required this.points, required this.color, this.compact = false});
   final List<SeriesPoint> points;
   final Color color;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +231,7 @@ class HeatStrip extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 28,
+          height: compact ? 22 : 28,
           child: Row(
             children: [
               for (var i = 0; i < points.length; i++) ...[
@@ -249,7 +250,7 @@ class HeatStrip extends StatelessWidget {
             ],
           ),
         ),
-        if (points.isNotEmpty) ...[
+        if (points.isNotEmpty && !compact) ...[
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

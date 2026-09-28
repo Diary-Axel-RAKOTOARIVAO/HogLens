@@ -235,23 +235,25 @@ class GradientMeter extends StatelessWidget {
 
 /// Label on the left, bold value on the right.
 class KeyValueRow extends StatelessWidget {
-  const KeyValueRow(this.label, this.value, {super.key});
+  const KeyValueRow(this.label, this.value, {super.key, this.compact = false});
   final String label;
   final String value;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final size = compact ? 13.0 : 15.0;
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: EdgeInsets.only(top: compact ? 4 : 6),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: TextStyle(color: c.textMuted, fontSize: 15))),
+          Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textMuted, fontSize: size))),
           Text(
             value,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              fontSize: 15,
+              fontSize: size,
               color: c.text,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),

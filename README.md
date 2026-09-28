@@ -24,7 +24,7 @@ The key is stored in the iOS Keychain / Android encrypted storage and is only ev
 
 ## Custom widgets
 
-Widgets run a HogQL query through `POST /api/projects/:id/query/`. Use `{range}` in the query to follow the dashboard range, for example:
+Widgets run a HogQL query through `POST /api/projects/:id/query/`. Use `{range}` (window start) and optionally `{range_end}` in the query to follow the dashboard range, for example:
 
 ```sql
 SELECT count() FROM events WHERE event = 'user signed up' AND timestamp >= {range}

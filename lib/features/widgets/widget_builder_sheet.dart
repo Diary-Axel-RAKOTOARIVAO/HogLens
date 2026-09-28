@@ -75,7 +75,7 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
     });
     try {
       final client = await ref.read(clientProvider(widget.projectId).future);
-      final range = ref.read(rangeProvider);
+      final range = ref.read(rangeProvider).resolve(DateTime.now());
       final r = await client.query(project.projectId, StatsRepository.resolve(_query.text, range));
       setState(() {
         _testOk = true;
@@ -242,7 +242,7 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
         onChanged: (_) => setState(() => _testMessage = null),
       ),
       const SizedBox(height: 6),
-      Text('{range} becomes the dashboard range, e.g. now() - INTERVAL 7 DAY.',
+      Text('{range} and {range_end} become the dashboard window, e.g. toDateTime(\'2026-09-21 00:00:00\').',
           style: TextStyle(fontSize: 12, color: c.textFaint)),
       const SizedBox(height: 18),
       Text('SUBTITLE (OPTIONAL)', style: Theme.of(context).textTheme.labelSmall),
