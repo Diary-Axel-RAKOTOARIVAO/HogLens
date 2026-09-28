@@ -5,6 +5,15 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-28
+
+### Added
+- Offline mode: the last fetched dashboard, custom widget results, feature flags and home-card numbers are saved on the device. Without a connection the app shows them with an "Offline · saved …" badge and refreshes when the network is back.
+
+### Changed
+- APKs are much smaller: native libraries are now compressed inside the package and Java code is shrunk with R8.
+- APKs are signed with the v1, v2 and v3 schemes so older or stricter sideload installers accept them.
+
 ## [0.2.0] - 2026-09-28
 
 ### Added
