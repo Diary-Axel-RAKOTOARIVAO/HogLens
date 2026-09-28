@@ -5,6 +5,19 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-28
+
+### Added
+- Date range picker now offers the current month by name (for example "September") and a custom start and end date, alongside 24h, 7d and 30d. Custom widgets follow the chosen window through `{range}` and the new `{range_end}` placeholder.
+- The hero card shows unique visitors, with a toggle to all views, over the selected window. Both count `$pageview` and `$screen` events, so mobile projects are covered too.
+
+### Changed
+- Secondary tiles are square: events with a per-bucket column chart, live pulse with the 24-hour strip, sessions with engagement ratios, and a trends scoreboard for visitors, views, events and sessions.
+- Windows are sent to PostHog as explicit timestamps instead of "now minus N days", so the previous-period comparison always covers exactly the same length.
+
+### Fixed
+- Hourly series no longer gain an extra empty bucket when the window starts mid-hour.
+
 ## [0.1.1] - 2026-09-28
 
 ### Fixed
