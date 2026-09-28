@@ -5,6 +5,16 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-28
+
+### Added
+- Live feed: tap the Live pulse tile (or open it from the project menu) to tail the newest events, refreshed every ten seconds, with a filter by event name.
+- Errors screen: `$exception` events over the selected window grouped by type and message, with counts, people affected, first and last seen, and a trend.
+- Tap any row in Top events to see that event's trend, reach, top pages and browsers over the window.
+- Number widgets can compare with the previous period and show the change.
+- The home screen sums today's and the last seven days' events across all projects, at no extra cost.
+- An update banner appears on the home screen when a newer release exists on GitHub, linking to the download.
+
 ## [0.4.2] - 2026-09-28
 
 ### Changed
