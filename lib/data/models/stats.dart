@@ -52,6 +52,9 @@ class RangeSelection {
     }
   }
 
+  /// Month name for calendar headers.
+  String copyMonthName(int m) => _monthName(m);
+
   static String _monthName(int m) =>
       const ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1];
   static String _short(DateTime d) =>

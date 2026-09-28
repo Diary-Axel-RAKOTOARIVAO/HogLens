@@ -14,6 +14,7 @@ import '../../shared/ui.dart';
 import '../widgets/custom_widget_tile.dart';
 import '../widgets/widget_builder_sheet.dart';
 import 'charts.dart';
+import 'range_sheet.dart';
 
 enum HeroMode { unique, all }
 
@@ -277,12 +278,10 @@ class _OfflineBadge extends StatelessWidget {
 }
 
 class _MenuRow extends StatelessWidget {
-  const _MenuRow({required this.icon, required this.label, required this.onTap, this.selected = false, this.trailing});
+  const _MenuRow({required this.icon, required this.label, required this.onTap});
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final bool selected;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -293,107 +292,20 @@ class _MenuRow extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, size: 20, color: selected ? c.text : c.textMuted),
+          Icon(icon, size: 20, color: c.textMuted),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(label, style: TextStyle(fontWeight: selected ? FontWeight.w700 : FontWeight.w500, fontSize: 15)),
-          ),
-          trailing ?? Icon(selected ? SolarIconsBold.checkCircle : SolarIconsOutline.altArrowRight, size: 18, color: selected ? c.text : c.textFaint),
+          Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15))),
+          Icon(SolarIconsOutline.altArrowRight, size: 18, color: c.textFaint),
         ],
       ),
     );
   }
 }
 
-/// Shows only the active range; tapping opens the list of options.
+/// Shows only the active range; tapping opens the drawer of options.
 class _RangeBar extends ConsumerWidget {
   const _RangeBar({required this.selection});
   final RangeSelection selection;
-
-  Future<void> _pickCustom(BuildContext context, WidgetRef ref) async {
-    final now = DateTime.now();
-    final initial = selection.kind == RangeKind.custom && selection.customStart != null
-        ? DateTimeRange(start: selection.customStart!, end: selection.customEnd ?? now)
-        : DateTimeRange(start: now.subtract(const Duration(days: 6)), end: now);
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(now.year - 2),
-      lastDate: now,
-      initialDateRange: initial,
-      helpText: 'Custom range',
-      builder: (context, child) {
-        final c = context.colors;
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: c.text,
-              onPrimary: c.bg,
-              primaryContainer: c.surface,
-              onPrimaryContainer: c.text,
-              surface: c.bg,
-              onSurface: c.text,
-              onSurfaceVariant: c.textMuted,
-              secondaryContainer: c.surface,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      ref.read(rangeProvider.notifier).set(RangeSelection(RangeKind.custom, customStart: picked.start, customEnd: picked.end));
-    }
-  }
-
-  void _open(BuildContext context, WidgetRef ref) {
-    final now = DateTime.now();
-    final descriptions = {
-      RangeKind.day: 'Rolling last 24 hours',
-      RangeKind.week: 'Rolling last 7 days',
-      RangeKind.month: 'Rolling last 30 days',
-      RangeKind.thisMonth: 'From the 1st to today',
-    };
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Time range', style: Theme.of(ctx).textTheme.titleLarge),
-              const SizedBox(height: 14),
-              for (final r in RangeSelection.presets) ...[
-                _MenuRow(
-                  icon: r.kind == RangeKind.thisMonth ? SolarIconsOutline.calendar : SolarIconsOutline.clockCircle,
-                  label: r.kind == RangeKind.thisMonth ? 'This month · ${r.label(now)}' : 'Last ${r.label(now)}',
-                  selected: selection == r,
-                  trailing: selection == r
-                      ? null
-                      : Text(descriptions[r.kind]!, style: TextStyle(fontSize: 11.5, color: ctx.colors.textFaint)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    ref.read(rangeProvider.notifier).set(r);
-                  },
-                ),
-                const SizedBox(height: 8),
-              ],
-              _MenuRow(
-                icon: SolarIconsOutline.calendarSearch,
-                label: selection.kind == RangeKind.custom ? 'Custom · ${selection.label(now)}' : 'Custom dates',
-                selected: selection.kind == RangeKind.custom,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickCustom(context, ref);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -411,7 +323,7 @@ class _RangeBar extends ConsumerWidget {
           shape: const StadiumBorder(),
           child: InkWell(
             customBorder: const StadiumBorder(),
-            onTap: () => _open(context, ref),
+            onTap: () => showRangeSheet(context),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
               child: Row(
