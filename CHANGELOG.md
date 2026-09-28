@@ -5,6 +5,11 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-09-28
+
+### Changed
+- The time range drawer matches the rest of the app: preset cards with icons and descriptions, and a built-in calendar for custom dates instead of the system picker. Tap a start day, then an end day; quick chips give the last 14, 60 or 90 days.
+
 ## [0.4.1] - 2026-09-28
 
 ### Changed
