@@ -5,6 +5,15 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-28
+
+### Changed
+- The dashboard header shows the project logo and name; tap it for feature flags and project settings. The two header buttons are gone.
+- The time range is a single pill showing the active range; tapping it opens the list of ranges and the custom date picker, so nothing is clipped on narrow phones.
+- The Unique / All switch slides between its options instead of snapping.
+- Numbers count up to their new value on load and on every refresh.
+- Smaller type inside the square tiles so the session ratios and captions no longer collide.
+
 ## [0.3.0] - 2026-09-28
 
 ### Added
