@@ -5,6 +5,15 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-29
+
+### Added
+- App settings, reachable from the gear on the projects page: appearance (system, light or dark), language (English or French), the app version, a check-for-updates action, and links to star HogLens on GitHub or report a problem.
+- French translation of every main screen, including dates and relative times.
+
+### Fixed
+- Trends tile rows no longer wrap on narrow phones: labels truncate and the change badges stay on one line.
+
 ## [0.6.0] - 2026-09-28
 
 ### Added
