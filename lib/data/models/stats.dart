@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/i18n.dart';
 
-enum RangeKind { day, week, month, thisMonth, custom }
+enum RangeKind { today, day, week, month, thisMonth, custom }
 
 /// What the user picked. Resolved into a concrete [StatRange] at query time
 /// so "now" is fresh on every refresh.
@@ -14,14 +14,16 @@ class RangeSelection {
   final DateTime? customStart;
   final DateTime? customEnd;
 
+  static const today = RangeSelection(RangeKind.today);
   static const day = RangeSelection(RangeKind.day);
   static const week = RangeSelection(RangeKind.week);
   static const month = RangeSelection(RangeKind.month);
   static const thisMonth = RangeSelection(RangeKind.thisMonth);
 
-  static const presets = [day, week, month, thisMonth];
+  static const presets = [today, day, week, month, thisMonth];
 
   String label(DateTime now) => switch (kind) {
+        RangeKind.today => tr('Today'),
         RangeKind.day => '24h',
         RangeKind.week => '7d',
         RangeKind.month => '30d',
@@ -33,6 +35,8 @@ class RangeSelection {
 
   StatRange resolve(DateTime now) {
     switch (kind) {
+      case RangeKind.today:
+        return StatRange(start: DateTime(now.year, now.month, now.day), end: now, label: label(now), kind: kind);
       case RangeKind.day:
         return StatRange(start: now.subtract(const Duration(hours: 24)), end: now, label: label(now), kind: kind);
       case RangeKind.week:
@@ -77,10 +81,14 @@ class StatRange {
   final RangeKind kind;
 
   Duration get span => end.difference(start);
-  DateTime get previousStart => start.subtract(span);
+
+  /// Today compares with the same hours yesterday; other windows with the
+  /// window of equal length just before.
+  DateTime get previousStart => kind == RangeKind.today ? start.subtract(const Duration(days: 1)) : start.subtract(span);
+  DateTime get previousEnd => kind == RangeKind.today ? end.subtract(const Duration(days: 1)) : start;
 
   /// Hourly buckets for windows up to two days, daily otherwise.
-  bool get hourly => span.inHours <= 48;
+  bool get hourly => kind == RangeKind.today || span.inHours <= 48;
   String get bucket => hourly ? 'hour' : 'day';
 
   /// Number of buckets the filled series will contain.
@@ -101,6 +109,7 @@ class StatRange {
   String get startSql => _sql(start);
   String get endSql => _sql(end);
   String get previousStartSql => _sql(previousStart);
+  String get previousEndSql => _sql(previousEnd);
 
   /// Stable key for caching results of this window. Rolling windows share a
   /// key per kind so the newest fetch replaces the previous one.
@@ -121,7 +130,7 @@ class StatRange {
       );
 
   String get whereCurrent => 'timestamp >= $startSql AND timestamp < $endSql';
-  String get wherePrevious => 'timestamp >= $previousStartSql AND timestamp < $startSql';
+  String get wherePrevious => 'timestamp >= $previousStartSql AND timestamp < $previousEndSql';
   String get whereBoth => 'timestamp >= $previousStartSql AND timestamp < $endSql';
 }
 

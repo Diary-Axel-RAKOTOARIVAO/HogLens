@@ -49,6 +49,12 @@ void main() {
     expect(c.end, DateTime(2026, 9, 10));
     expect(c.bucketCount, 7);
     expect(c.label, 'Sep 3 – Sep 9');
+    final t = RangeSelection.today.resolve(now);
+    expect(t.start, DateTime(2026, 9, 28));
+    expect(t.hourly, isTrue);
+    expect(t.bucketCount, 12);
+    expect(t.previousStart, DateTime(2026, 9, 27));
+    expect(t.previousEnd, DateTime(2026, 9, 27, 12));
     expect(RangeSelection.day.resolve(now).hourly, isTrue);
     expect(RangeSelection.day.resolve(now).bucketCount, 24);
   });

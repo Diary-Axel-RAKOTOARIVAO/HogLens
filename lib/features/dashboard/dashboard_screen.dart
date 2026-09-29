@@ -350,8 +350,7 @@ class _RangeBar extends ConsumerWidget {
     final c = context.colors;
     final now = DateTime.now();
     final label = switch (selection.kind) {
-      RangeKind.thisMonth => selection.label(now),
-      RangeKind.custom => selection.label(now),
+      RangeKind.today || RangeKind.thisMonth || RangeKind.custom => selection.label(now),
       _ => '${tr('Last')} ${selection.label(now)}',
     };
     return Row(
@@ -400,9 +399,11 @@ class _KeyStats extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final range = stats.range;
-    final rangeLabel = range.kind == RangeKind.day
-        ? tr('Last 24 hours')
-        : '${Fmt.monthDay(range.start)} – ${Fmt.monthDay(range.end.subtract(const Duration(seconds: 1)))}';
+    final rangeLabel = switch (range.kind) {
+      RangeKind.today => '${tr('Today')} · ${Fmt.monthDay(range.start)}',
+      RangeKind.day => tr('Last 24 hours'),
+      _ => '${Fmt.monthDay(range.start)} – ${Fmt.monthDay(range.end.subtract(const Duration(seconds: 1)))}',
+    };
     final peak = stats.hourlySeries.isEmpty ? null : stats.hourlySeries.reduce((a, b) => b.v > a.v ? b : a);
     final sessions = stats.sessions.current;
     final visitors = stats.visitors.current;
@@ -425,7 +426,7 @@ class _KeyStats extends StatelessWidget {
                     const SizedBox(height: 10),
                     AnimatedBigValue(stats.events.current, format: Fmt.compact, size: 26),
                     const SizedBox(height: 2),
-                    _DeltaLine(stats.events.delta, suffix: tr('vs previous')),
+                    _DeltaLine(stats.events.delta, suffix: range.kind == RangeKind.today ? tr('vs yesterday') : tr('vs previous')),
                     const Spacer(),
                     MiniBars(values: stats.eventSeries.map((p) => p.v).toList(), color: project.accent, height: 40, gap: 3),
                     const SizedBox(height: 6),
@@ -481,7 +482,7 @@ class _KeyStats extends StatelessWidget {
                     const SizedBox(height: 10),
                     AnimatedBigValue(sessions, format: Fmt.compact, size: 26),
                     const SizedBox(height: 2),
-                    _DeltaLine(stats.sessions.delta, suffix: tr('vs previous')),
+                    _DeltaLine(stats.sessions.delta, suffix: range.kind == RangeKind.today ? tr('vs yesterday') : tr('vs previous')),
                     const Spacer(),
                     KeyValueRow(tr('Events / session'), sessions == 0 ? '—' : (stats.events.current / sessions).toStringAsFixed(1), compact: true),
                     KeyValueRow(tr('Views / session'), sessions == 0 ? '—' : (stats.views.current / sessions).toStringAsFixed(1), compact: true),

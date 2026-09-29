@@ -99,6 +99,7 @@ class _RangeSheetState extends ConsumerState<_RangeSheet> {
     final sel = ref.watch(rangeProvider);
     final now = DateTime.now();
     final items = <(RangeSelection?, IconData, String, String)>[
+      (RangeSelection.today, SolarIconsOutline.sunrise, tr('Today'), tr('Since midnight, hour by hour')),
       (RangeSelection.day, SolarIconsOutline.clockCircle, tr('Last 24 hours'), tr('Rolling, hour by hour')),
       (RangeSelection.week, SolarIconsOutline.calendarMinimalistic, tr('Last 7 days'), tr('Rolling, day by day')),
       (RangeSelection.month, SolarIconsOutline.calendarMinimalistic, tr('Last 30 days'), tr('Rolling, day by day')),

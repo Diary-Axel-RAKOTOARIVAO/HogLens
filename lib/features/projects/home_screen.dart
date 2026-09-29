@@ -29,7 +29,12 @@ class HomeScreen extends ConsumerWidget {
           SliverAppBar(
             pinned: true,
             titleSpacing: Spacing.page,
-            title: Column(
+            title: Row(
+              children: [
+                const BrandLogo(size: 40),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -39,6 +44,9 @@ class HomeScreen extends ConsumerWidget {
                       ? tr('Nothing connected yet')
                       : '${projects.length} ${tr('connected')} · ${Fmt.monthDay(DateTime.now())}',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: c.textMuted),
+                ),
+              ],
+            ),
                 ),
               ],
             ),
@@ -62,6 +70,7 @@ class HomeScreen extends ConsumerWidget {
               hasScrollBody: false,
               child: EmptyState(
                 icon: SolarIconsOutline.chartSquare,
+                leading: const BrandLogo(size: 96),
                 title: tr('No projects yet'),
                 message: tr('Add a PostHog project with a personal API key to see its pulse.'),
                 action: Column(
@@ -185,7 +194,7 @@ class _Overview extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(tr('VISITORS TODAY'), style: Theme.of(context).textTheme.labelSmall),
+                    Text(tr('VISITORS TODAY'), maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall),
                     const SizedBox(height: 6),
                     loaded == 0 ? const Skeleton(width: 80, height: 26) : AnimatedBigValue(today, format: Fmt.compact, size: 26),
                   ],
@@ -195,7 +204,7 @@ class _Overview extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(tr('UNIQUE, 7 DAYS'), style: Theme.of(context).textTheme.labelSmall),
+                    Text(tr('UNIQUE, 7 DAYS'), maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall),
                     const SizedBox(height: 6),
                     loaded == 0 ? const Skeleton(width: 80, height: 26) : AnimatedBigValue(week, format: Fmt.compact, size: 26),
                   ],

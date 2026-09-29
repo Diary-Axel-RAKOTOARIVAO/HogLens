@@ -16,7 +16,7 @@ class AppTheme {
       brightness: brightness,
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Accents.all.first,
+        seedColor: Brand.orange,
         brightness: brightness,
         surface: c.bg,
       ),
@@ -69,6 +69,7 @@ class AppTheme {
         ),
       ),
       dividerTheme: DividerThemeData(color: c.border, thickness: 1, space: 1),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: Brand.orange),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: c.surface,
@@ -109,8 +110,8 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: c.text,
-          foregroundColor: c.bg,
+          backgroundColor: Brand.orange,
+          foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(54),
           shape: const StadiumBorder(),
           textStyle: GoogleFonts.inter(

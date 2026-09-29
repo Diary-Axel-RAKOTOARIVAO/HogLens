@@ -38,7 +38,7 @@ class WorldScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(tr('Worldwide')),
-            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' ? range.label : '${tr('Last')} ${range.label}',
+            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' || range.kind.name == 'today' ? range.label : '${tr('Last')} ${range.label}',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textMuted)),
           ],
         ),

@@ -2,12 +2,13 @@
 /// later language) overrides them. `tr()` falls back to the key, so an
 /// untranslated string still reads correctly in English.
 enum AppLanguage {
-  en('English', 'en'),
-  fr('Français', 'fr');
+  en('English', 'en', '🇬🇧'),
+  fr('Français', 'fr', '🇫🇷');
 
-  const AppLanguage(this.label, this.code);
+  const AppLanguage(this.label, this.code, this.flag);
   final String label;
   final String code;
+  final String flag;
 }
 
 AppLanguage currentLanguage = AppLanguage.en;
@@ -38,9 +39,9 @@ const Map<String, String> _fr = {
   'Add project': 'Ajouter un projet',
   'Explore with demo data': 'Explorer avec des données de démo',
   'Hold and drag to reorder': 'Maintenez et glissez pour réordonner',
-  'visitors today': 'visiteurs aujourd’hui',
-  'VISITORS TODAY': 'VISITEURS AUJOURD’HUI',
-  'UNIQUE, 7 DAYS': 'UNIQUES, 7 JOURS',
+  'visitors today': 'visiteurs du jour',
+  'VISITORS TODAY': 'AUJOURD’HUI',
+  'UNIQUE, 7 DAYS': 'UNIQUES · 7 J',
   'is out': 'est disponible',
   'Tap to open the release and download the APK': 'Touchez pour ouvrir la version et télécharger l’APK',
   'Settings': 'Réglages',
@@ -51,6 +52,9 @@ const Map<String, String> _fr = {
   'Light': 'Clair',
   'Dark': 'Sombre',
   'Language': 'Langue',
+  'Today': 'Aujourd’hui',
+  'Since midnight, hour by hour': 'Depuis minuit, heure par heure',
+  'vs yesterday': 'vs hier',
   'About': 'À propos',
   'Version': 'Version',
   'Star HogLens on GitHub': 'Mettre une étoile à HogLens sur GitHub',

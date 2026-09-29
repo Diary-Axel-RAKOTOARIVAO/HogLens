@@ -23,7 +23,7 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final update = ref.watch(updateCheckProvider);
 
-    Widget choice<T>({required List<(T, String, IconData)> options, required T value, required ValueChanged<T> onChanged}) {
+    Widget choice<T>({required List<(T, String, Widget)> options, required T value, required ValueChanged<T> onChanged}) {
       return Row(
         children: [
           for (final (v, label, icon) in options) ...[
@@ -39,7 +39,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   child: Column(
                     children: [
-                      Icon(icon, size: 18, color: v == value ? c.bg : c.text),
+                      IconTheme(data: IconThemeData(size: 18, color: v == value ? c.bg : c.text), child: SizedBox(height: 20, child: Center(child: icon))),
                       const SizedBox(height: 4),
                       Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: v == value ? c.bg : c.text)),
                     ],
@@ -70,9 +70,9 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 10),
           choice<ThemeMode>(
             options: [
-              (ThemeMode.system, tr('System'), SolarIconsOutline.smartphone),
-              (ThemeMode.light, tr('Light'), SolarIconsOutline.sun),
-              (ThemeMode.dark, tr('Dark'), SolarIconsOutline.moon),
+              (ThemeMode.system, tr('System'), const Icon(SolarIconsOutline.smartphone)),
+              (ThemeMode.light, tr('Light'), const Icon(SolarIconsOutline.sun)),
+              (ThemeMode.dark, tr('Dark'), const Icon(SolarIconsOutline.moon)),
             ],
             value: settings.themeMode,
             onChanged: (m) => ref.read(settingsProvider.notifier).setTheme(m),
@@ -81,7 +81,7 @@ class SettingsScreen extends ConsumerWidget {
           Text(tr('Language').toUpperCase(), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 10),
           choice<AppLanguage>(
-            options: [for (final l in AppLanguage.values) (l, l.label, SolarIconsOutline.global)],
+            options: [for (final l in AppLanguage.values) (l, l.label, Text(l.flag, style: const TextStyle(fontSize: 18)))],
             value: settings.language,
             onChanged: (l) => ref.read(settingsProvider.notifier).setLanguage(l),
           ),
@@ -95,12 +95,7 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(color: c.text, borderRadius: BorderRadius.circular(14)),
-                      child: Icon(SolarIconsBold.eye, color: c.bg, size: 24),
-                    ),
+                    const BrandLogo(size: 56),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(

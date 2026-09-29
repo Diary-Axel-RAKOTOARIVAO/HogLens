@@ -53,10 +53,16 @@ class AppColors {
   );
 }
 
+/// Brand colors from the logo. Projects still carry their own accent.
+class Brand {
+  static const Color orange = Color(0xFFFF6600);
+  static const Color ink = Color(0xFF505050);
+}
+
 /// Accent palette a project can pick from. Index is persisted, not the color.
 class Accents {
   static const List<Color> all = [
-    Color(0xFFF54E00), // PostHog orange
+    Brand.orange, // logo orange
     Color(0xFF1C7CF2), // blue
     Color(0xFF16A34A), // green
     Color(0xFF7C3AED), // violet

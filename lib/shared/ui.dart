@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -8,6 +9,25 @@ import '../core/i18n.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/tokens.dart';
 import '../data/models/project.dart';
+
+/// The HogLens mark. The hedgehog uses `currentColor`, so it follows the
+/// text color of the theme while the bars stay brand orange.
+class BrandLogo extends StatelessWidget {
+  const BrandLogo({super.key, this.size = 40, this.color});
+  final double size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.asset(
+      'assets/brand/logo.svg',
+      width: size,
+      height: size,
+      colorFilter: null,
+      theme: SvgTheme(currentColor: color ?? context.colors.text),
+    );
+  }
+}
 
 /// Borderless white card on the gray canvas. No shadows anywhere in the app.
 class Card1 extends StatelessWidget {
@@ -380,10 +400,9 @@ class PillFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    final fg = color == null ? c.bg : Colors.white;
+    const fg = Colors.white;
     return Material(
-      color: color ?? c.text,
+      color: color ?? Brand.orange,
       shape: const StadiumBorder(),
       child: InkWell(
         customBorder: const StadiumBorder(),
@@ -462,11 +481,15 @@ class EmptyState extends StatelessWidget {
     required this.title,
     required this.message,
     this.action,
+    this.leading,
   });
   final IconData icon;
   final String title;
   final String message;
   final Widget? action;
+
+  /// Replaces the icon circle, e.g. with the brand logo.
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -477,12 +500,13 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(color: c.surfaceRaised, shape: BoxShape.circle),
-              child: Icon(icon, color: c.textMuted, size: 28),
-            ),
+            leading ??
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(color: c.surfaceRaised, shape: BoxShape.circle),
+                  child: Icon(icon, color: c.textMuted, size: 28),
+                ),
             const SizedBox(height: 18),
             Text(title, style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
             const SizedBox(height: 6),

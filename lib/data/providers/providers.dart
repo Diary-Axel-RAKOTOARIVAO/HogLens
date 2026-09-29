@@ -148,7 +148,7 @@ final clientProvider = FutureProvider.family<PhApi, String>((ref, projectId) asy
 
 class RangeNotifier extends Notifier<RangeSelection> {
   @override
-  RangeSelection build() => RangeSelection.week;
+  RangeSelection build() => RangeSelection.today;
   void set(RangeSelection r) => state = r;
 }
 
