@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:solar_icons/solar_icons.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/api/posthog_client.dart';
@@ -131,9 +132,9 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
   }
 
   List<Widget> _presetGallery(AppColors c) => [
-        Text('New widget', style: Theme.of(context).textTheme.headlineMedium),
+        Text(tr('New widget'), style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 4),
-        Text('Start from a preset, then tweak the query.', style: TextStyle(color: c.textMuted)),
+        Text(tr('Start from a preset, then tweak the query.'), style: TextStyle(color: c.textMuted)),
         const SizedBox(height: 20),
         for (final p in widgetPresets)
           Padding(
@@ -180,17 +181,17 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
               onPressed: () => setState(() => _draft = null),
             ),
           Expanded(
-            child: Text(widget.existing == null ? 'Configure' : 'Edit widget',
+            child: Text(widget.existing == null ? tr('Configure') : tr('Edit widget'),
                 style: Theme.of(context).textTheme.headlineMedium),
           ),
         ],
       ),
       const SizedBox(height: 18),
-      Text('TITLE', style: Theme.of(context).textTheme.labelSmall),
+      Text(tr('TITLE'), style: Theme.of(context).textTheme.labelSmall),
       const SizedBox(height: 8),
       TextField(controller: _title, decoration: const InputDecoration(hintText: 'Sign-ups')),
       const SizedBox(height: 18),
-      Text('DISPLAY', style: Theme.of(context).textTheme.labelSmall),
+      Text(tr('DISPLAY'), style: Theme.of(context).textTheme.labelSmall),
       const SizedBox(height: 8),
       Row(
         children: [
@@ -211,7 +212,7 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
       const SizedBox(height: 18),
       Row(
         children: [
-          Text('WIDTH', style: Theme.of(context).textTheme.labelSmall),
+          Text(tr('WIDTH'), style: Theme.of(context).textTheme.labelSmall),
           const Spacer(),
           SegmentedButton<WidgetSize>(
             showSelectedIcon: false,
@@ -219,9 +220,9 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
               visualDensity: VisualDensity.compact,
               textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
             ),
-            segments: const [
-              ButtonSegment(value: WidgetSize.half, label: Text('Half')),
-              ButtonSegment(value: WidgetSize.full, label: Text('Full')),
+            segments: [
+              ButtonSegment(value: WidgetSize.half, label: Text(tr('Half'))),
+              ButtonSegment(value: WidgetSize.full, label: Text(tr('Full'))),
             ],
             selected: {d.size},
             onSelectionChanged: (s) => setState(() => _draft = d.copyWith(size: s.first)),
@@ -239,8 +240,8 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Compare with previous period', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                    Text('Runs the query again for the window before', style: TextStyle(fontSize: 12, color: c.textMuted)),
+                    Text(tr('Compare with previous period'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    Text(tr('Runs the query again for the window before'), style: TextStyle(fontSize: 12, color: c.textMuted)),
                   ],
                 ),
               ),
@@ -270,9 +271,9 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
       Text('{range} and {range_end} become the dashboard window, e.g. toDateTime(\'2026-09-21 00:00:00\').',
           style: TextStyle(fontSize: 12, color: c.textFaint)),
       const SizedBox(height: 18),
-      Text('SUBTITLE (OPTIONAL)', style: Theme.of(context).textTheme.labelSmall),
+      Text(tr('SUBTITLE (OPTIONAL)'), style: Theme.of(context).textTheme.labelSmall),
       const SizedBox(height: 8),
-      TextField(controller: _subtitle, decoration: const InputDecoration(hintText: 'Shown under the value')),
+      TextField(controller: _subtitle, decoration: InputDecoration(hintText: tr('Shown under the value'))),
       const SizedBox(height: 20),
       Row(
         children: [
@@ -289,14 +290,14 @@ class _WidgetBuilderSheetState extends ConsumerState<_WidgetBuilderSheet> {
               ),
               child: _testing
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Test query'),
+                  : Text(tr('Test query')),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: FilledButton(
               onPressed: _query.text.trim().isEmpty ? null : _save,
-              child: Text(widget.existing == null ? 'Add widget' : 'Save'),
+              child: Text(widget.existing == null ? tr('Add widget') : 'Save'),
             ),
           ),
         ],

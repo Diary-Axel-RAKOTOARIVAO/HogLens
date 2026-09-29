@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -54,8 +55,8 @@ class BehaviorScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Behavior'),
-            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' ? range.label : 'Last ${range.label}',
+            Text(tr('Behavior')),
+            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' ? range.label : '${tr('Last')} ${range.label}',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textMuted)),
           ],
         ),
@@ -70,9 +71,9 @@ class BehaviorScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CardLabel('User lifecycle', icon: SolarIconsOutline.usersGroupRounded),
+                  CardLabel(tr('User lifecycle'), icon: SolarIconsOutline.usersGroupRounded),
                   const SizedBox(height: 4),
-                  Text('Who was new, back again, returning after a break, or gone quiet.', style: TextStyle(fontSize: 12.5, color: c.textMuted)),
+                  Text(tr('Who was new, back again, returning after a break, or gone quiet.'), style: TextStyle(fontSize: 12.5, color: c.textMuted)),
                   const SizedBox(height: 16),
                   lifecycle.when(
                     skipLoadingOnRefresh: true,
@@ -88,9 +89,9 @@ class BehaviorScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CardLabel('Weekly retention', icon: SolarIconsOutline.calendar),
+                  CardLabel(tr('Weekly retention'), icon: SolarIconsOutline.calendar),
                   const SizedBox(height: 4),
-                  Text('Of the people first seen each week, how many came back in later weeks.', style: TextStyle(fontSize: 12.5, color: c.textMuted)),
+                  Text(tr('Of the people first seen each week, how many came back in later weeks.'), style: TextStyle(fontSize: 12.5, color: c.textMuted)),
                   const SizedBox(height: 16),
                   retention.when(
                     skipLoadingOnRefresh: true,
@@ -106,16 +107,16 @@ class BehaviorScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CardLabel('Navigation paths', icon: SolarIconsOutline.routing),
+                  CardLabel(tr('Navigation paths'), icon: SolarIconsOutline.routing),
                   const SizedBox(height: 4),
-                  Text('The most common page-to-page journeys, up to four steps.', style: TextStyle(fontSize: 12.5, color: c.textMuted)),
+                  Text(tr('The most common page-to-page journeys, up to four steps.'), style: TextStyle(fontSize: 12.5, color: c.textMuted)),
                   const SizedBox(height: 16),
                   paths.when(
                     skipLoadingOnRefresh: true,
                     loading: () => const Skeleton(height: 260, radius: 12),
                     error: (e, _) => ErrorCard(message: '$e', onRetry: refresh),
                     data: (r) => r.links.isEmpty
-                        ? Text('No journeys in this window.', style: TextStyle(color: c.textFaint))
+                        ? Text(tr('No journeys in this window.'), style: TextStyle(color: c.textFaint))
                         : SankeyChart(links: r.links, accent: accent, height: 280),
                   ),
                 ],
@@ -220,7 +221,7 @@ class _LifecycleChart extends StatelessWidget {
                 children: [
                   Container(width: 8, height: 8, decoration: BoxDecoration(color: colors[s], shape: BoxShape.circle)),
                   const SizedBox(width: 5),
-                  Text('${s[0].toUpperCase()}${s.substring(1)} · ${Fmt.compact(report.total(s))}', style: TextStyle(fontSize: 12, color: c.textMuted)),
+                  Text('${tr('${s[0].toUpperCase()}${s.substring(1)}')} · ${Fmt.compact(report.total(s))}', style: TextStyle(fontSize: 12, color: c.textMuted)),
                 ],
               ),
           ],
@@ -256,9 +257,9 @@ class _RetentionGrid extends StatelessWidget {
       children: [
         Row(
           children: [
-            SizedBox(width: 58, child: Text('Cohort', style: TextStyle(fontSize: 11, color: c.textFaint))),
+            SizedBox(width: 58, child: Text(tr('Cohort'), style: TextStyle(fontSize: 11, color: c.textFaint))),
             for (var w = 0; w < cols; w++)
-              Expanded(child: Text(w == 0 ? 'Size' : 'W$w', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: c.textFaint))),
+              Expanded(child: Text(w == 0 ? tr('Size') : '${currentLanguage == AppLanguage.fr ? 'S' : 'W'}$w', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: c.textFaint))),
           ],
         ),
         const SizedBox(height: 6),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -47,7 +48,7 @@ class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> {
         titleSpacing: 12,
         title: Row(
           children: [
-            const Text('Live feed'),
+            Text(tr('Live feed')),
             const SizedBox(width: 10),
             Container(width: 8, height: 8, decoration: BoxDecoration(color: c.positive, shape: BoxShape.circle))
                 .animate(onPlay: (ctl) => ctl.repeat(reverse: true))
@@ -90,7 +91,7 @@ class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> {
                 child: ErrorCard(message: '$e', onRetry: () => ref.invalidate(liveFeedProvider((widget.projectId, _applied)))),
               ),
               data: (events) => events.isEmpty
-                  ? const EmptyState(icon: SolarIconsOutline.pulse, title: 'Nothing yet', message: 'No matching events in the last 24 hours.')
+                  ? EmptyState(icon: SolarIconsOutline.pulse, title: 'Nothing yet', message: tr('No matching events in the last 24 hours.'))
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 40),
                       itemCount: events.length,

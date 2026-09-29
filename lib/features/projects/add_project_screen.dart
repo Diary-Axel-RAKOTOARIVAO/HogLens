@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:solar_icons/solar_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/api/posthog_client.dart';
@@ -54,9 +55,9 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
 
   Future<void> _connect() async {
     final key = _key.text.trim();
-    if (key.isEmpty) return setState(() => _error = 'Paste a personal API key.');
+    if (key.isEmpty) return setState(() => _error = tr('Paste a personal API key.'));
     if (_host == PhHost.custom && !(Uri.tryParse(_baseUrl)?.hasScheme ?? false)) {
-      return setState(() => _error = 'Enter a valid host URL.');
+      return setState(() => _error = tr('Enter a valid host URL.'));
     }
     setState(() {
       _busy = true;
@@ -113,7 +114,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
 
   Future<void> _useManualId() async {
     final id = int.tryParse(_manualId.text.trim());
-    if (id == null) return setState(() => _error = 'Enter a numeric project ID.');
+    if (id == null) return setState(() => _error = tr('Enter a numeric project ID.'));
     setState(() {
       _busy = true;
       _error = null;
@@ -140,7 +141,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
 
   Future<void> _save() async {
     final name = _name.text.trim();
-    if (name.isEmpty) return setState(() => _error = 'Give the project a name.');
+    if (name.isEmpty) return setState(() => _error = tr('Give the project a name.'));
     setState(() => _busy = true);
     final p = await ref.read(projectsProvider.notifier).add(
           name: name,
@@ -171,7 +172,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
           ),
         ),
         titleSpacing: 12,
-        title: Text(const ['Connect', 'Choose project', 'Brand it'][_step]),
+        title: Text([tr('Connect'), tr('Choose project'), tr('Brand it')][_step]),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: Spacing.page),
@@ -209,9 +210,9 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
   }
 
   List<Widget> _connectStep(AppColors c) => [
-        Text('Where does this project live?', style: Theme.of(context).textTheme.headlineMedium),
+        Text(tr('Where does this project live?'), style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 6),
-        Text('HogLens reads through the private API using a personal key with project:read and query:read scopes.',
+        Text(tr('HogLens reads through the private API using a personal key with project:read and query:read scopes.'),
             style: TextStyle(color: c.textMuted, height: 1.4)),
         const SizedBox(height: 24),
         Row(
@@ -238,7 +239,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
           ),
         ],
         const SizedBox(height: 24),
-        Text('PERSONAL API KEY', style: Theme.of(context).textTheme.labelSmall),
+        Text(tr('PERSONAL API KEY'), style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: 8),
         TextField(
           controller: _key,
@@ -262,7 +263,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
             children: [
               Icon(SolarIconsOutline.keyMinimalistic, size: 14, color: c.textMuted),
               const SizedBox(width: 6),
-              Text('Create one in PostHog → Settings → Personal API keys',
+              Text(tr('Create one in PostHog → Settings → Personal API keys'),
                   style: TextStyle(color: c.textMuted, fontSize: 12.5, decoration: TextDecoration.underline)),
             ],
           ),
@@ -270,15 +271,15 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
         const SizedBox(height: 28),
         FilledButton(
           onPressed: _busy ? null : _connect,
-          child: _busy ? const _Spinner() : const Text('Connect'),
+          child: _busy ? const _Spinner() : Text(tr('Connect')),
         ),
         const SizedBox(height: 12),
-        Text('Stored in the device Keychain. Never leaves this phone except to talk to your PostHog host.',
+        Text(tr('Stored in the device Keychain. Never leaves this phone except to talk to your PostHog host.'),
             textAlign: TextAlign.center, style: TextStyle(color: c.textFaint, fontSize: 12)),
       ];
 
   List<Widget> _chooseStep(AppColors c) => [
-        Text(_remote.isEmpty ? 'No projects visible' : 'Pick a project',
+        Text(_remote.isEmpty ? tr('No projects visible') : tr('Pick a project'),
             style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 6),
         Text(
@@ -306,7 +307,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
             ),
           ),
         const SizedBox(height: 16),
-        Text('OR BY PROJECT ID', style: Theme.of(context).textTheme.labelSmall),
+        Text(tr('OR BY PROJECT ID'), style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -321,7 +322,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
             FilledButton(
               onPressed: _busy ? null : _useManualId,
               style: FilledButton.styleFrom(minimumSize: const Size(96, 52)),
-              child: _busy ? const _Spinner() : const Text('Use'),
+              child: _busy ? const _Spinner() : Text(tr('Use')),
             ),
           ],
         ),
@@ -366,13 +367,13 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
             const SizedBox(height: 12),
             TextButton(
               onPressed: _logo == null ? _pickLogo : () => setState(() => _logo = null),
-              child: Text(_logo == null ? 'Upload logo' : 'Remove logo'),
+              child: Text(_logo == null ? tr('Upload logo') : tr('Remove logo')),
             ),
           ],
         ),
       ),
       const SizedBox(height: 20),
-      Text('NAME', style: Theme.of(context).textTheme.labelSmall),
+      Text(tr('NAME'), style: Theme.of(context).textTheme.labelSmall),
       const SizedBox(height: 8),
       TextField(
         controller: _name,
@@ -381,13 +382,13 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
         decoration: const InputDecoration(hintText: 'My app'),
       ),
       const SizedBox(height: 24),
-      Text('ACCENT', style: Theme.of(context).textTheme.labelSmall),
+      Text(tr('ACCENT'), style: Theme.of(context).textTheme.labelSmall),
       const SizedBox(height: 10),
       AccentPicker(value: _accent, onChanged: (i) => setState(() => _accent = i)),
       const SizedBox(height: 32),
       FilledButton(
         onPressed: _busy ? null : _save,
-        child: _busy ? const _Spinner() : const Text('Add project'),
+        child: _busy ? const _Spinner() : Text(tr('Add project')),
       ),
     ];
   }

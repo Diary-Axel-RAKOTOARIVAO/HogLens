@@ -7,6 +7,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/providers/providers.dart';
@@ -64,7 +65,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
           newKey: _key.text.trim().isEmpty ? null : _key.text.trim(),
         );
     if (!mounted) return;
-    showToast(context, 'Saved');
+    showToast(context, tr('Saved'));
     context.pop();
   }
 
@@ -72,13 +73,13 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove project?'),
-        content: const Text('The stored API key, logo and custom widgets on this phone will be deleted. Nothing changes in PostHog.'),
+        title: Text(tr('Remove project?')),
+        content: Text(tr('The stored API key, logo and custom widgets on this phone will be deleted. Nothing changes in PostHog.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Remove', style: TextStyle(color: ctx.colors.negative)),
+            child: Text(tr('Remove'), style: TextStyle(color: ctx.colors.negative)),
           ),
         ],
       ),
@@ -107,7 +108,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
           child: Center(child: IconCircleButton(icon: SolarIconsOutline.altArrowLeft, onTap: () => context.pop())),
         ),
         titleSpacing: 12,
-        title: const Text('Project settings'),
+        title: Text(tr('Project settings')),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Spacing.page, 8, Spacing.page, 40),
@@ -123,7 +124,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextButton(onPressed: _pickLogo, child: const Text('Change logo')),
+                    TextButton(onPressed: _pickLogo, child: Text(tr('Change logo'))),
                     if (p.logoPath != null || _newLogo != null)
                       TextButton(
                         onPressed: () => setState(() {
@@ -138,24 +139,24 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('NAME', style: Theme.of(context).textTheme.labelSmall),
+          Text(tr('NAME'), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 8),
           TextField(controller: _name, onChanged: (_) => setState(() {})),
           const SizedBox(height: 24),
-          Text('ACCENT', style: Theme.of(context).textTheme.labelSmall),
+          Text(tr('ACCENT'), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 10),
           AccentPicker(value: _accent ?? p.accentIndex, onChanged: (i) => setState(() => _accent = i)),
           const SizedBox(height: 24),
-          Text('CONNECTION', style: Theme.of(context).textTheme.labelSmall),
+          Text(tr('CONNECTION'), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 8),
           Card1(
             radius: Radii.tile,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _kv(context, 'Host', p.host),
+                _kv(context, tr('Host'), p.host),
                 const Divider(height: 20),
-                _kv(context, 'Project ID', '${p.projectId}'),
+                _kv(context, tr('Project ID'), '${p.projectId}'),
               ],
             ),
           ),
@@ -165,11 +166,11 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
             obscureText: true,
             autocorrect: false,
             style: const TextStyle(fontFamily: 'Menlo', fontSize: 14),
-            decoration: const InputDecoration(hintText: 'Replace API key (optional)'),
+            decoration: InputDecoration(hintText: tr('Replace API key (optional)')),
           ),
           if (HomeWidgetService.supported) ...[
             const SizedBox(height: 24),
-            Text('HOME SCREEN WIDGET', style: Theme.of(context).textTheme.labelSmall),
+            Text(tr('HOME SCREEN WIDGET'), style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
             Card1(
               radius: Radii.tile,
@@ -182,8 +183,8 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Show this project on the widget', style: TextStyle(fontWeight: FontWeight.w600)),
-                            Text('Visitors today and the last seven days, refreshed every 30 minutes.',
+                            Text(tr('Show this project on the widget'), style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(tr('Visitors today and the last seven days, refreshed every 30 minutes.'),
                                 style: TextStyle(fontSize: 12.5, color: c.textMuted)),
                           ],
                         ),
@@ -206,13 +207,13 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                     onPressed: () async {
                       final ok = await HomeWidget.isRequestPinWidgetSupported() ?? false;
                       if (!ok) {
-                        if (context.mounted) showToast(context, 'Long-press your home screen to add the HogLens widget.');
+                        if (context.mounted) showToast(context, tr('Long-press your home screen to add the HogLens widget.'));
                         return;
                       }
                       await HomeWidget.requestPinWidget(name: 'HogLensWidgetProvider', androidName: 'HogLensWidgetProvider');
                     },
                     icon: const Icon(SolarIconsOutline.widgetAdd, size: 18),
-                    label: const Text('Add to home screen'),
+                    label: Text(tr('Add to home screen')),
                   ),
                 ],
               ),
@@ -221,12 +222,12 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
           const SizedBox(height: 32),
           FilledButton(
             onPressed: _busy ? null : _save,
-            child: const Text('Save changes'),
+            child: Text(tr('Save changes')),
           ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: _delete,
-            child: Text('Remove project', style: TextStyle(color: c.negative)),
+            child: Text(tr('Remove project'), style: TextStyle(color: c.negative)),
           ),
         ],
       ),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -32,19 +33,25 @@ class HomeScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Projects'),
+                Text(tr('Projects')),
                 Text(
                   projects.isEmpty
-                      ? 'Nothing connected yet'
-                      : '${projects.length} connected · ${Fmt.monthDay(DateTime.now())}',
+                      ? tr('Nothing connected yet')
+                      : '${projects.length} ${tr('connected')} · ${Fmt.monthDay(DateTime.now())}',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: c.textMuted),
                 ),
               ],
             ),
             actions: [
               IconCircleButton(
+                icon: SolarIconsOutline.settings,
+                tooltip: tr('Settings'),
+                onTap: () => context.push('/settings'),
+              ),
+              const SizedBox(width: 10),
+              IconCircleButton(
                 icon: SolarIconsOutline.addCircle,
-                tooltip: 'Add project',
+                tooltip: tr('Add project'),
                 onTap: () => context.push('/add'),
               ),
               const SizedBox(width: Spacing.page),
@@ -55,19 +62,19 @@ class HomeScreen extends ConsumerWidget {
               hasScrollBody: false,
               child: EmptyState(
                 icon: SolarIconsOutline.chartSquare,
-                title: 'No projects yet',
-                message: 'Add a PostHog project with a personal API key to see its pulse.',
+                title: tr('No projects yet'),
+                message: tr('Add a PostHog project with a personal API key to see its pulse.'),
                 action: Column(
                   children: [
                     FilledButton(
                       onPressed: () => context.push('/add'),
                       style: FilledButton.styleFrom(minimumSize: const Size(180, 48)),
-                      child: const Text('Add project'),
+                      child: Text(tr('Add project')),
                     ),
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () => addDemoProject(context, ref),
-                      child: Text('Explore with demo data', style: TextStyle(color: c.textMuted)),
+                      child: Text(tr('Explore with demo data'), style: TextStyle(color: c.textMuted)),
                     ),
                   ],
                 ),
@@ -106,7 +113,7 @@ class HomeScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 32),
                 child: Text(
-                  'Hold and drag to reorder',
+                  tr('Hold and drag to reorder'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: c.textFaint, fontSize: 12),
                 ),
@@ -158,8 +165,8 @@ class _Overview extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('HogLens ${update.version} is out', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
-                      Text('Tap to open the release and download the APK', style: TextStyle(fontSize: 12, color: c.textMuted)),
+                      Text('HogLens ${update.version} ${tr('is out')}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+                      Text(tr('Tap to open the release and download the APK'), style: TextStyle(fontSize: 12, color: c.textMuted)),
                     ],
                   ),
                 ),
@@ -178,7 +185,7 @@ class _Overview extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('VISITORS TODAY', style: Theme.of(context).textTheme.labelSmall),
+                    Text(tr('VISITORS TODAY'), style: Theme.of(context).textTheme.labelSmall),
                     const SizedBox(height: 6),
                     loaded == 0 ? const Skeleton(width: 80, height: 26) : AnimatedBigValue(today, format: Fmt.compact, size: 26),
                   ],
@@ -188,7 +195,7 @@ class _Overview extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('UNIQUE, 7 DAYS', style: Theme.of(context).textTheme.labelSmall),
+                    Text(tr('UNIQUE, 7 DAYS'), style: Theme.of(context).textTheme.labelSmall),
                     const SizedBox(height: 6),
                     loaded == 0 ? const Skeleton(width: 80, height: 26) : AnimatedBigValue(week, format: Fmt.compact, size: 26),
                   ],
@@ -248,7 +255,7 @@ class _ProjectCard extends ConsumerWidget {
                 children: [
                   AnimatedBigValue(v.today, format: Fmt.compact, size: 24),
                   const SizedBox(height: 2),
-                  Text('visitors today', style: TextStyle(color: c.textMuted, fontSize: 13)),
+                  Text(tr('visitors today'), style: TextStyle(color: c.textMuted, fontSize: 13)),
                   const SizedBox(height: 8),
                   MiniBars(values: v.daily, color: project.accent, height: 22, gap: 3),
                 ],

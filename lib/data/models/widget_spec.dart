@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/i18n.dart';
+
 /// How a custom widget renders its HogQL result.
 enum WidgetKind {
   number('Number', 'First cell of the first row'),
@@ -7,8 +9,9 @@ enum WidgetKind {
   bars('Bars', 'Rows of (label, value)'),
   table('Table', 'Raw rows and columns');
 
-  const WidgetKind(this.label, this.hint);
-  final String label;
+  const WidgetKind(this._label, this.hint);
+  final String _label;
+  String get label => tr(_label);
   final String hint;
 }
 

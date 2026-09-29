@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -179,7 +180,7 @@ class CustomWidgetTile extends ConsumerWidget {
             if (spec.compare) ...[
               const SizedBox(height: 4),
               delta == null
-                  ? Text('No previous data', style: TextStyle(fontSize: 12, color: c.textFaint))
+                  ? Text(tr('No previous data'), style: TextStyle(fontSize: 12, color: c.textFaint))
                   : Text.rich(
                       TextSpan(children: [
                         TextSpan(
@@ -189,7 +190,7 @@ class CustomWidgetTile extends ConsumerWidget {
                             color: delta == 0 ? c.textMuted : (delta > 0 ? c.positive : c.negative),
                           ),
                         ),
-                        TextSpan(text: ' vs previous', style: TextStyle(color: c.textMuted)),
+                        TextSpan(text: ' ${tr('vs previous')}', style: TextStyle(color: c.textMuted)),
                       ]),
                       style: const TextStyle(fontSize: 12),
                     ),

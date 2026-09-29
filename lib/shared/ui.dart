@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../core/i18n.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/tokens.dart';
 import '../data/models/project.dart';
@@ -513,7 +514,7 @@ class ErrorCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(child: Text(message, style: TextStyle(color: c.text, height: 1.35))),
           if (onRetry != null)
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(onPressed: onRetry, child: Text(tr('Retry'))),
         ],
       ),
     );

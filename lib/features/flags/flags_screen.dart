@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -25,7 +26,7 @@ class FlagsScreen extends ConsumerWidget {
           child: Center(child: IconCircleButton(icon: SolarIconsOutline.altArrowLeft, onTap: () => context.pop())),
         ),
         titleSpacing: 12,
-        title: const Text('Feature flags'),
+        title: Text(tr('Feature flags')),
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -44,7 +45,7 @@ class FlagsScreen extends ConsumerWidget {
             children: [ErrorCard(message: '$e', onRetry: () => ref.invalidate(flagsProvider(projectId)))],
           ),
           data: (list) => list.isEmpty
-              ? ListView(children: const [SizedBox(height: 120), EmptyState(icon: SolarIconsOutline.flag, title: 'No flags', message: 'This project has no feature flags yet.')])
+              ? ListView(children: [const SizedBox(height: 120), EmptyState(icon: SolarIconsOutline.flag, title: tr('No flags'), message: tr('This project has no feature flags yet.'))])
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(Spacing.page, 4, Spacing.page, 40),
                   itemCount: list.length,

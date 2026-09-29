@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -36,8 +37,8 @@ class WorldScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Worldwide'),
-            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' ? range.label : 'Last ${range.label}',
+            Text(tr('Worldwide')),
+            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' ? range.label : '${tr('Last')} ${range.label}',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textMuted)),
           ],
         ),
@@ -65,8 +66,8 @@ class WorldScreen extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          const Expanded(child: CardLabel('Visitors by country', icon: SolarIconsOutline.global)),
-                          Text('${r.countries.length} countries', style: TextStyle(fontSize: 12.5, color: c.textMuted)),
+                          Expanded(child: CardLabel(tr('Visitors by country'), icon: SolarIconsOutline.global)),
+                          Text('${r.countries.length} ${tr('countries')}', style: TextStyle(fontSize: 12.5, color: c.textMuted)),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -84,13 +85,13 @@ class WorldScreen extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          Expanded(child: Text('Top countries', style: Theme.of(context).textTheme.titleLarge)),
-                          Text('${Fmt.compact(total)} visitors', style: TextStyle(fontSize: 13, color: c.textMuted)),
+                          Expanded(child: Text(tr('Top countries'), style: Theme.of(context).textTheme.titleLarge)),
+                          Text('${Fmt.compact(total)} ${tr('visitors')}', style: TextStyle(fontSize: 13, color: c.textMuted)),
                         ],
                       ),
                       const SizedBox(height: 16),
                       if (r.countries.isEmpty)
-                        Text('No GeoIP data in this window.', style: TextStyle(color: c.textFaint))
+                        Text(tr('No GeoIP data in this window.'), style: TextStyle(color: c.textFaint))
                       else
                         for (var i = 0; i < r.countries.length.clamp(0, 12); i++) ...[
                           _CountryRow(

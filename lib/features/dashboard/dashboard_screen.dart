@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -72,7 +73,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 18),
               _MenuRow(
                 icon: SolarIconsOutline.pulse,
-                label: 'Live feed',
+                label: tr('Live feed'),
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/p/${project.id}/live');
@@ -81,7 +82,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 8),
               _MenuRow(
                 icon: SolarIconsOutline.usersGroupRounded,
-                label: 'Behavior · lifecycle, retention, paths',
+                label: tr('Behavior · lifecycle, retention, paths'),
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/p/${project.id}/behavior');
@@ -90,7 +91,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 8),
               _MenuRow(
                 icon: SolarIconsOutline.global,
-                label: 'Worldwide',
+                label: tr('Worldwide'),
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/p/${project.id}/world');
@@ -99,7 +100,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 8),
               _MenuRow(
                 icon: SolarIconsOutline.dangerTriangle,
-                label: 'Errors',
+                label: tr('Errors'),
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/p/${project.id}/errors');
@@ -108,7 +109,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 8),
               _MenuRow(
                 icon: SolarIconsOutline.flag,
-                label: 'Feature flags',
+                label: tr('Feature flags'),
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/p/${project.id}/flags');
@@ -117,7 +118,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 8),
               _MenuRow(
                 icon: SolarIconsOutline.settings,
-                label: 'Project settings',
+                label: tr('Project settings'),
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/p/${project.id}/settings');
@@ -141,7 +142,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       floatingActionButton: PillFab(
-        label: 'Add widget',
+        label: tr('Add widget'),
         icon: SolarIconsOutline.addCircle,
         color: project.accentIndex == Accents.all.length - 1 ? null : project.accent,
         onTap: () => showWidgetBuilder(context, projectId: project.id),
@@ -239,7 +240,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ? null
                         : TextButton(
                             onPressed: () => setState(() => _editing = !_editing),
-                            child: Text(_editing ? 'Done' : 'Edit'),
+                            child: Text(_editing ? tr('Done') : tr('Edit')),
                           ),
                   ),
                   if (widgets.isEmpty)
@@ -261,10 +262,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Track anything', style: Theme.of(context).textTheme.titleMedium),
+                                Text(tr('Track anything'), style: Theme.of(context).textTheme.titleMedium),
                                 const SizedBox(height: 3),
                                 Text(
-                                  'Any HogQL query as a number, trend, bars or table.',
+                                  tr('Any HogQL query as a number, trend, bars or table.'),
                                   style: TextStyle(color: c.textMuted, fontSize: 14, height: 1.35),
                                 ),
                               ],
@@ -303,7 +304,7 @@ class _OfflineBadge extends StatelessWidget {
               Icon(SolarIconsOutline.cloudCross, size: 15, color: c.textMuted),
               const SizedBox(width: 7),
               Text(
-                'Offline · saved ${Fmt.relative(savedAt)}',
+                '${tr('Offline · saved')} ${Fmt.relative(savedAt)}',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.textMuted),
               ),
             ],
@@ -351,7 +352,7 @@ class _RangeBar extends ConsumerWidget {
     final label = switch (selection.kind) {
       RangeKind.thisMonth => selection.label(now),
       RangeKind.custom => selection.label(now),
-      _ => 'Last ${selection.label(now)}',
+      _ => '${tr('Last')} ${selection.label(now)}',
     };
     return Row(
       children: [
@@ -400,7 +401,7 @@ class _KeyStats extends StatelessWidget {
     final c = context.colors;
     final range = stats.range;
     final rangeLabel = range.kind == RangeKind.day
-        ? 'Last 24 hours'
+        ? tr('Last 24 hours')
         : '${Fmt.monthDay(range.start)} – ${Fmt.monthDay(range.end.subtract(const Duration(seconds: 1)))}';
     final peak = stats.hourlySeries.isEmpty ? null : stats.hourlySeries.reduce((a, b) => b.v > a.v ? b : a);
     final sessions = stats.sessions.current;
@@ -420,15 +421,15 @@ class _KeyStats extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CardLabel('Events', icon: SolarIconsOutline.chartSquare),
+                    CardLabel(tr('Events'), icon: SolarIconsOutline.chartSquare),
                     const SizedBox(height: 10),
                     AnimatedBigValue(stats.events.current, format: Fmt.compact, size: 26),
                     const SizedBox(height: 2),
-                    _DeltaLine(stats.events.delta, suffix: 'vs previous'),
+                    _DeltaLine(stats.events.delta, suffix: tr('vs previous')),
                     const Spacer(),
                     MiniBars(values: stats.eventSeries.map((p) => p.v).toList(), color: project.accent, height: 40, gap: 3),
                     const SizedBox(height: 6),
-                    Text(range.hourly ? 'Per hour' : 'Per day', style: TextStyle(color: c.textMuted, fontSize: 11.5)),
+                    Text(range.hourly ? tr('Per hour') : tr('Per day'), style: TextStyle(color: c.textMuted, fontSize: 11.5)),
                   ],
                 ),
               ),
@@ -440,7 +441,7 @@ class _KeyStats extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CardLabel('Live pulse', icon: SolarIconsOutline.pulse),
+                    CardLabel(tr('Live pulse'), icon: SolarIconsOutline.pulse),
                     const SizedBox(height: 10),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -448,16 +449,16 @@ class _KeyStats extends StatelessWidget {
                       children: [
                         AnimatedBigValue(stats.activeNow, format: Fmt.full, size: 26),
                         const SizedBox(width: 6),
-                        Text('on site', style: TextStyle(color: c.textMuted, fontSize: 14)),
+                        Text(tr('on site'), style: TextStyle(color: c.textMuted, fontSize: 14)),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text('Last 5 minutes', style: TextStyle(color: c.textMuted, fontSize: 12)),
+                    Text(tr('Last 5 minutes'), style: TextStyle(color: c.textMuted, fontSize: 12)),
                     const Spacer(),
                     HeatStrip(points: stats.hourlySeries, color: project.accent, compact: true),
                     const SizedBox(height: 6),
                     Text(
-                      peak == null ? 'Quiet 24h' : 'Peak ${Fmt.hour(peak.t)} · ${Fmt.compact(peak.v)}',
+                      peak == null ? tr('Quiet 24h') : '${tr('Peak')} ${Fmt.hour(peak.t)} · ${Fmt.compact(peak.v)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: c.textMuted, fontSize: 11.5),
@@ -476,15 +477,15 @@ class _KeyStats extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CardLabel('Sessions', icon: SolarIconsOutline.cursor),
+                    CardLabel(tr('Sessions'), icon: SolarIconsOutline.cursor),
                     const SizedBox(height: 10),
                     AnimatedBigValue(sessions, format: Fmt.compact, size: 26),
                     const SizedBox(height: 2),
-                    _DeltaLine(stats.sessions.delta, suffix: 'vs previous'),
+                    _DeltaLine(stats.sessions.delta, suffix: tr('vs previous')),
                     const Spacer(),
-                    KeyValueRow('Events / session', sessions == 0 ? '—' : (stats.events.current / sessions).toStringAsFixed(1), compact: true),
-                    KeyValueRow('Views / session', sessions == 0 ? '—' : (stats.views.current / sessions).toStringAsFixed(1), compact: true),
-                    KeyValueRow('Sessions / visitor', visitors == 0 ? '—' : (sessions / visitors).toStringAsFixed(1), compact: true),
+                    KeyValueRow(tr('Events / session'), sessions == 0 ? '—' : (stats.events.current / sessions).toStringAsFixed(1), compact: true),
+                    KeyValueRow(tr('Views / session'), sessions == 0 ? '—' : (stats.views.current / sessions).toStringAsFixed(1), compact: true),
+                    KeyValueRow(tr('Sessions / visitor'), visitors == 0 ? '—' : (sessions / visitors).toStringAsFixed(1), compact: true),
                   ],
                 ),
               ),
@@ -495,16 +496,16 @@ class _KeyStats extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CardLabel('Trends', icon: SolarIconsOutline.graphUp),
+                    CardLabel(tr('Trends'), icon: SolarIconsOutline.graphUp),
                     const SizedBox(height: 4),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _TrendRow('Visitors', stats.visitors),
-                          _TrendRow('Views', stats.views),
-                          _TrendRow('Events', stats.events),
-                          _TrendRow('Sessions', stats.sessions),
+                          _TrendRow(tr('Visitors'), stats.visitors),
+                          _TrendRow(tr('Views'), stats.views),
+                          _TrendRow(tr('Events'), stats.events),
+                          _TrendRow(tr('Sessions'), stats.sessions),
                         ],
                       ),
                     ),
@@ -521,14 +522,14 @@ class _KeyStats extends StatelessWidget {
             children: [
               CardLabel(rangeLabel, icon: SolarIconsOutline.calendar),
               const SizedBox(height: 14),
-              Text('Top events', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 28)),
+              Text(tr('Top events'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 28)),
               const SizedBox(height: 6),
               Text(
                 stats.topEvents.isEmpty
-                    ? 'No events were captured in this range.'
-                    : '${stats.topEvents.length} event types, ${Fmt.compact(stats.events.current)} events in total. '
-                        '${stats.topEvents.first.name} leads with '
-                        '${stats.totalTop == 0 ? '' : '${(stats.topEvents.first.count / stats.totalTop * 100).round()}% of the top ${stats.topEvents.length}'}.',
+                    ? tr('No events were captured in this range.')
+                    : '${stats.topEvents.length} ${tr('event types')}, ${Fmt.compact(stats.events.current)} ${tr('events in total')}. '
+                        '${stats.topEvents.first.name} ${tr('leads with')} '
+                        '${stats.totalTop == 0 ? '' : '${(stats.topEvents.first.count / stats.totalTop * 100).round()}% ${tr('of the top')} ${stats.topEvents.length}'}.',
                 style: TextStyle(color: c.textMuted, fontSize: 15, height: 1.4),
               ),
               if (stats.topEvents.isNotEmpty) ...[
@@ -601,14 +602,14 @@ class _HeroCard extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          (unique ? 'Unique visitors' : 'Views').toUpperCase(),
+                          (unique ? tr('UNIQUE VISITORS') : tr('VIEWS')),
                           style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12, letterSpacing: 1.6, fontWeight: FontWeight.w500),
                         ),
                       ),
                       SlidingToggle<HeroMode>(
                         value: mode,
                         options: const [HeroMode.unique, HeroMode.all],
-                        labels: const ['Unique', 'All'],
+                        labels: [tr('Unique'), tr('All')],
                         onChanged: onModeChanged,
                         background: fg.withValues(alpha: 0.18),
                         highlight: fg,
@@ -635,8 +636,8 @@ class _HeroCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     unique
-                        ? '${Fmt.compact(metric.previous)} in the previous period · ${Fmt.compact(stats.views.current)} views'
-                        : '${Fmt.compact(metric.previous)} in the previous period · ${Fmt.compact(stats.visitors.current)} unique',
+                        ? '${Fmt.compact(metric.previous)} ${tr('in the previous period')} · ${Fmt.compact(stats.views.current)} ${tr('views')}'
+                        : '${Fmt.compact(metric.previous)} ${tr('in the previous period')} · ${Fmt.compact(stats.visitors.current)} ${tr('unique')}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 14),
@@ -659,7 +660,7 @@ class _DeltaLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    if (delta == null) return Text('No previous data', style: TextStyle(color: c.textMuted, fontSize: 12.5));
+    if (delta == null) return Text(tr('No previous data'), style: TextStyle(color: c.textMuted, fontSize: 12.5));
     final color = delta == 0 ? c.textMuted : (delta! > 0 ? c.positive : c.negative);
     return Text.rich(
       TextSpan(children: [
@@ -681,24 +682,26 @@ class _TrendRow extends StatelessWidget {
     final c = context.colors;
     final d = metric.delta;
     final color = d == null || d == 0 ? c.textMuted : (d > 0 ? c.positive : c.negative);
+    // One line per row: the label truncates before the badge ever wraps.
     return Row(
       children: [
-        Expanded(child: Text(label, style: TextStyle(fontSize: 15, color: c.text, fontWeight: FontWeight.w500))),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 13.5, color: c.text, fontWeight: FontWeight.w500),
+          ),
+        ),
+        const SizedBox(width: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
           decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(Radii.chip)),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (d != null && d != 0) ...[
-                Icon(d > 0 ? SolarIconsBold.arrowUp : SolarIconsBold.arrowDown, size: 11, color: color),
-                const SizedBox(width: 3),
-              ],
-              Text(
-                d == null ? 'new' : Fmt.percent(d),
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: color),
-              ),
-            ],
+          child: Text(
+            d == null ? tr('new') : '${d > 0 ? '↑' : (d < 0 ? '↓' : '')}${Fmt.percent(d)}',
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: color, fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ),
       ],

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -98,16 +99,16 @@ class _RangeSheetState extends ConsumerState<_RangeSheet> {
     final sel = ref.watch(rangeProvider);
     final now = DateTime.now();
     final items = <(RangeSelection?, IconData, String, String)>[
-      (RangeSelection.day, SolarIconsOutline.clockCircle, 'Last 24 hours', 'Rolling, hour by hour'),
-      (RangeSelection.week, SolarIconsOutline.calendarMinimalistic, 'Last 7 days', 'Rolling, day by day'),
-      (RangeSelection.month, SolarIconsOutline.calendarMinimalistic, 'Last 30 days', 'Rolling, day by day'),
-      (RangeSelection.thisMonth, SolarIconsOutline.calendar, RangeSelection.thisMonth.label(now), 'This month, from the 1st to today'),
-      (null, SolarIconsOutline.calendarSearch, 'Custom dates', sel.kind == RangeKind.custom ? sel.label(now) : 'Pick a start and an end day'),
+      (RangeSelection.day, SolarIconsOutline.clockCircle, tr('Last 24 hours'), tr('Rolling, hour by hour')),
+      (RangeSelection.week, SolarIconsOutline.calendarMinimalistic, tr('Last 7 days'), tr('Rolling, day by day')),
+      (RangeSelection.month, SolarIconsOutline.calendarMinimalistic, tr('Last 30 days'), tr('Rolling, day by day')),
+      (RangeSelection.thisMonth, SolarIconsOutline.calendar, RangeSelection.thisMonth.label(now), tr('This month, from the 1st to today')),
+      (null, SolarIconsOutline.calendarSearch, tr('Custom dates'), sel.kind == RangeKind.custom ? sel.label(now) : tr('Pick a start and an end day')),
     ];
     return [
-      Text('Time range', style: Theme.of(context).textTheme.headlineMedium),
+      Text(tr('Time range'), style: Theme.of(context).textTheme.headlineMedium),
       const SizedBox(height: 4),
-      Text('Every number on the dashboard follows this window.', style: TextStyle(color: c.textMuted)),
+      Text(tr('Every number on the dashboard follows this window.'), style: TextStyle(color: c.textMuted)),
       const SizedBox(height: 20),
       for (final (r, icon, title, subtitle) in items)
         Padding(
@@ -143,7 +144,7 @@ class _RangeSheetState extends ConsumerState<_RangeSheet> {
             icon: const Icon(SolarIconsOutline.altArrowLeft),
             onPressed: () => setState(() => _calendar = false),
           ),
-          Expanded(child: Text('Custom dates', style: Theme.of(context).textTheme.headlineMedium)),
+          Expanded(child: Text(tr('Custom dates'), style: Theme.of(context).textTheme.headlineMedium)),
         ],
       ),
       const SizedBox(height: 4),
@@ -185,7 +186,7 @@ class _RangeSheetState extends ConsumerState<_RangeSheet> {
       const SizedBox(height: 16),
       Row(
         children: [
-          for (final (label, d) in [('Last 14 days', 14), ('Last 60 days', 60), ('Last 90 days', 90)]) ...[
+          for (final (label, d) in [(tr('Last 14 days'), 14), (tr('Last 60 days'), 60), (tr('Last 90 days'), 90)]) ...[
             Expanded(
               child: _QuickChip(
                 label: label,

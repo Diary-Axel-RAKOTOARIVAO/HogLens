@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -35,8 +36,8 @@ class ErrorsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Errors'),
-            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' ? range.label : 'Last ${range.label}',
+            Text(tr('Errors')),
+            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' ? range.label : '${tr('Last')} ${range.label}',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textMuted)),
           ],
         ),
@@ -66,7 +67,7 @@ class ErrorsScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CardLabel('Exceptions', icon: SolarIconsOutline.dangerTriangle),
+                    CardLabel(tr('Exceptions'), icon: SolarIconsOutline.dangerTriangle),
                     const SizedBox(height: 12),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -75,7 +76,7 @@ class ErrorsScreen extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Padding(
                           padding: const EdgeInsets.only(bottom: 6),
-                          child: Text('${Fmt.compact(r.people)} people affected', style: TextStyle(color: c.textMuted, fontSize: 14)),
+                          child: Text('${Fmt.compact(r.people)} ${tr('people affected')}', style: TextStyle(color: c.textMuted, fontSize: 14)),
                         ),
                       ],
                     ),
@@ -86,9 +87,9 @@ class ErrorsScreen extends ConsumerWidget {
               ).animate().fadeIn(duration: 300.ms),
               const SizedBox(height: Spacing.section),
               if (r.groups.isEmpty)
-                const EmptyState(icon: SolarIconsBold.checkCircle, title: 'No errors', message: 'Nothing was captured as an exception in this window.')
+                EmptyState(icon: SolarIconsBold.checkCircle, title: 'No errors', message: tr('Nothing was captured as an exception in this window.'))
               else ...[
-                SectionHeader('${r.groups.length} issue${r.groups.length == 1 ? '' : 's'}'),
+                SectionHeader('${r.groups.length} ${r.groups.length == 1 ? tr('issue') : tr('issues')}'),
                 for (var i = 0; i < r.groups.length; i++) ...[
                   _GroupCard(g: r.groups[i], share: r.total == 0 ? 0 : r.groups[i].count / r.total)
                       .animate()
@@ -138,13 +139,13 @@ class _GroupCard extends StatelessWidget {
             children: [
               Icon(SolarIconsOutline.usersGroupRounded, size: 13, color: c.textFaint),
               const SizedBox(width: 4),
-              Text('${Fmt.compact(g.people)} people', style: TextStyle(fontSize: 12, color: c.textMuted)),
+              Text('${Fmt.compact(g.people)} ${tr('people')}', style: TextStyle(fontSize: 12, color: c.textMuted)),
               const SizedBox(width: 12),
               Icon(SolarIconsOutline.clockCircle, size: 13, color: c.textFaint),
               const SizedBox(width: 4),
-              Text('last ${Fmt.relative(g.lastSeen)}', style: TextStyle(fontSize: 12, color: c.textMuted)),
+              Text('${tr('last')} ${Fmt.relative(g.lastSeen)}', style: TextStyle(fontSize: 12, color: c.textMuted)),
               const Spacer(),
-              Text('first ${Fmt.monthDay(g.firstSeen)}', style: TextStyle(fontSize: 12, color: c.textFaint)),
+              Text('${tr('first')} ${Fmt.monthDay(g.firstSeen)}', style: TextStyle(fontSize: 12, color: c.textFaint)),
             ],
           ),
         ],

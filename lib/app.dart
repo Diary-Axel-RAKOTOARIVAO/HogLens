@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/theme/app_theme.dart';
@@ -11,6 +13,8 @@ import 'features/flags/flags_screen.dart';
 import 'features/projects/add_project_screen.dart';
 import 'features/projects/home_screen.dart';
 import 'features/projects/project_settings_screen.dart';
+import 'features/settings/settings_screen.dart';
+import 'data/providers/settings_provider.dart';
 import 'features/world/world_screen.dart';
 
 final _router = GoRouter(
@@ -20,6 +24,7 @@ final _router = GoRouter(
       builder: (_, _) => const HomeScreen(),
       routes: [
         GoRoute(path: 'add', builder: (_, _) => const AddProjectScreen()),
+        GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
         GoRoute(
           path: 'p/:id',
           builder: (_, s) => DashboardScreen(projectId: s.pathParameters['id']!),
@@ -55,16 +60,26 @@ final _router = GoRouter(
   ],
 );
 
-class HogLensApp extends StatelessWidget {
+class HogLensApp extends ConsumerWidget {
   const HogLensApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
     return MaterialApp.router(
+      key: ValueKey(settings.language),
       title: 'HogLens',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.build(Brightness.light),
       darkTheme: AppTheme.build(Brightness.dark),
+      themeMode: settings.themeMode,
+      locale: Locale(settings.language.code),
+      supportedLocales: const [Locale('en'), Locale('fr')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: _router,
       builder: (context, child) {
         final dark = Theme.of(context).brightness == Brightness.dark;

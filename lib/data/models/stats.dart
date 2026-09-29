@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/i18n.dart';
+
 enum RangeKind { day, week, month, thisMonth, custom }
 
 /// What the user picked. Resolved into a concrete [StatRange] at query time
@@ -23,10 +25,10 @@ class RangeSelection {
         RangeKind.day => '24h',
         RangeKind.week => '7d',
         RangeKind.month => '30d',
-        RangeKind.thisMonth => _monthName(now.month),
+        RangeKind.thisMonth => monthName(now.month),
         RangeKind.custom => customStart == null || customEnd == null
-            ? 'Custom'
-            : '${_short(customStart!)} – ${_short(customEnd!)}',
+            ? tr('Custom')
+            : '${monthDay(customStart!)} – ${monthDay(customEnd!)}',
       };
 
   StatRange resolve(DateTime now) {
@@ -53,12 +55,7 @@ class RangeSelection {
   }
 
   /// Month name for calendar headers.
-  String copyMonthName(int m) => _monthName(m);
-
-  static String _monthName(int m) =>
-      const ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1];
-  static String _short(DateTime d) =>
-      '${const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month - 1]} ${d.day}';
+  String copyMonthName(int m) => monthName(m);
 
   @override
   bool operator ==(Object other) =>

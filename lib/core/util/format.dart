@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 
+import '../i18n.dart' as i18n;
+
 class Fmt {
   static final _compact = NumberFormat.compact();
   static final _full = NumberFormat.decimalPattern();
@@ -20,13 +22,15 @@ class Fmt {
 
   static String relative(DateTime t) {
     final d = DateTime.now().difference(t);
-    if (d.inSeconds < 60) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
-    if (d.inHours < 24) return '${d.inHours}h ago';
-    return '${d.inDays}d ago';
+    if (d.inSeconds < 60) return i18n.tr('just now');
+    final fr = i18n.currentLanguage == i18n.AppLanguage.fr;
+    String ago(String v) => fr ? 'il y a $v' : '$v ago';
+    if (d.inMinutes < 60) return ago('${d.inMinutes}m');
+    if (d.inHours < 24) return ago('${d.inHours}h');
+    return ago('${d.inDays}${fr ? 'j' : 'd'}');
   }
 
   static String shortDay(DateTime t) => DateFormat('E').format(t);
-  static String monthDay(DateTime t) => DateFormat('MMM d').format(t);
+  static String monthDay(DateTime t) => i18n.monthDay(t);
   static String hour(DateTime t) => DateFormat('HH:mm').format(t);
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
@@ -69,7 +70,7 @@ class _EventDrillSheet extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('OCCURRENCES', style: Theme.of(context).textTheme.labelSmall),
+                                Text(tr('OCCURRENCES'), style: Theme.of(context).textTheme.labelSmall),
                                 const SizedBox(height: 6),
                                 AnimatedBigValue(d.count, format: Fmt.compact, size: 32),
                               ],
@@ -79,7 +80,7 @@ class _EventDrillSheet extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('PEOPLE', style: Theme.of(context).textTheme.labelSmall),
+                                Text(tr('PEOPLE'), style: Theme.of(context).textTheme.labelSmall),
                                 const SizedBox(height: 6),
                                 AnimatedBigValue(d.people, format: Fmt.compact, size: 32),
                               ],
@@ -103,7 +104,7 @@ class _EventDrillSheet extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const CardLabel('Where it happens', icon: SolarIconsOutline.global),
+                        CardLabel(tr('Where it happens'), icon: SolarIconsOutline.global),
                         const SizedBox(height: 16),
                         BarList(rows: d.topPaths, color: accent, maxRows: 5),
                       ],
