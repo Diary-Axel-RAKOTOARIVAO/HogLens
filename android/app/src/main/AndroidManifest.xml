@@ -30,13 +30,73 @@
         <receiver
             android:name=".HogLensWidgetProvider"
             android:exported="true"
-            android:label="HogLens">
+            android:label="HogLens · Week">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/hoglens_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".HogLensSmallWidgetProvider"
+            android:exported="true"
+            android:label="HogLens · Visitors">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/hoglens_widget_small_info" />
+        </receiver>
+
+        <receiver
+            android:name=".HogLensLiveWidgetProvider"
+            android:exported="true"
+            android:label="HogLens · Live">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/hoglens_widget_live_info" />
+        </receiver>
+
+        <receiver
+            android:name=".HogLensErrorsWidgetProvider"
+            android:exported="true"
+            android:label="HogLens · Errors">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/hoglens_widget_errors_info" />
+        </receiver>
+
+        <receiver
+            android:name=".HogLensOverviewWidgetProvider"
+            android:exported="true"
+            android:label="HogLens · Overview">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/hoglens_widget_overview_info" />
+        </receiver>
+
+        <receiver
+            android:name=".HogLensTrendWidgetProvider"
+            android:exported="true"
+            android:label="HogLens · Trend">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/hoglens_widget_trend_info" />
         </receiver>
 
         <!-- Don't delete the meta-data below.

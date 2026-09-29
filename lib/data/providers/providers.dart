@@ -176,7 +176,11 @@ class KeyStatsNotifier extends AsyncNotifier<KeyStats> {
       encode: (v) => v.toJson(),
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
-        return StatsRepository(client, project.projectId).fetch(range);
+        final stats = await StatsRepository(client, project.projectId).fetch(range);
+        if (ref.read(storeProvider).widgetProjectId == projectId) {
+          unawaited(HomeWidgetService.pushToday(project, stats));
+        }
+        return stats;
       },
     );
   }
@@ -236,7 +240,7 @@ class GlanceNotifier extends AsyncNotifier<Glance> {
           week: w is num ? w : num.tryParse('$w') ?? 0,
         );
         if (ref.read(storeProvider).widgetProjectId == projectId) {
-          unawaited(HomeWidgetService.push(project, glance));
+          unawaited(HomeWidgetService.pushGlance(project, glance));
         }
         return glance;
       },
@@ -402,7 +406,11 @@ class ErrorsNotifier extends AsyncNotifier<ErrorsReport> {
       encode: (v) => v.toJson(),
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
-        return InsightsRepository(client, project.projectId).errors(range);
+        final report = await InsightsRepository(client, project.projectId).errors(range);
+        if (range.kind == RangeKind.today && ref.read(storeProvider).widgetProjectId == projectId) {
+          unawaited(HomeWidgetService.pushErrors(project, report));
+        }
+        return report;
       },
     );
   }

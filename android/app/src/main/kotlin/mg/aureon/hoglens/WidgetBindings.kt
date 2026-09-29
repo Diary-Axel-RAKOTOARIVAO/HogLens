@@ -1,0 +1,61 @@
+package mg.aureon.hoglens
+
+import android.content.SharedPreferences
+import android.widget.RemoteViews
+import mg.aureon.hoglens.WidgetSupport.text
+
+object SmallBinding {
+    val updatedId: Int? = null
+    fun fill(v: RemoteViews, d: SharedPreferences) {
+        v.setTextViewText(R.id.widget_visitors, text(d, "visitors"))
+        v.setTextViewText(R.id.widget_caption, text(d, "l_visitors_today", "visitors today"))
+    }
+}
+
+object LiveBinding {
+    val updatedId: Int? = R.id.widget_updated
+    fun fill(v: RemoteViews, d: SharedPreferences) {
+        v.setTextViewText(R.id.widget_live_label, text(d, "l_live", "LIVE"))
+        v.setTextViewText(R.id.widget_live, text(d, "live"))
+        v.setTextViewText(R.id.widget_caption, text(d, "l_on_site", "on site now"))
+    }
+}
+
+object ErrorsBinding {
+    val updatedId: Int? = R.id.widget_updated
+    fun fill(v: RemoteViews, d: SharedPreferences) {
+        v.setTextViewText(R.id.widget_errors, text(d, "errors"))
+        v.setTextViewText(R.id.widget_caption, text(d, "l_errors_today", "errors today"))
+        v.setTextViewText(R.id.widget_top_error, text(d, "topError", ""))
+    }
+}
+
+object OverviewBinding {
+    val updatedId: Int? = R.id.widget_updated
+    fun fill(v: RemoteViews, d: SharedPreferences) {
+        v.setTextViewText(R.id.stat1_value, text(d, "visitors"))
+        v.setTextViewText(R.id.stat1_label, text(d, "l_visitors", "Visitors"))
+        v.setTextViewText(R.id.stat2_value, text(d, "views"))
+        v.setTextViewText(R.id.stat2_label, text(d, "l_views", "Views"))
+        v.setTextViewText(R.id.stat3_value, text(d, "sessions"))
+        v.setTextViewText(R.id.stat3_label, text(d, "l_sessions", "Sessions"))
+        v.setTextViewText(R.id.stat4_value, text(d, "live"))
+        v.setTextViewText(R.id.stat4_label, text(d, "l_live", "LIVE"))
+    }
+}
+
+object TrendBinding {
+    val updatedId: Int? = R.id.widget_updated
+    fun fill(v: RemoteViews, d: SharedPreferences) {
+        v.setTextViewText(R.id.widget_visitors, text(d, "visitors"))
+        v.setTextViewText(R.id.widget_caption, text(d, "l_visitors_today", "visitors today"))
+        WidgetSupport.delta(v, d, R.id.widget_delta)
+        WidgetSupport.image(v, d, "spark", R.id.widget_spark)
+        v.setTextViewText(R.id.stat2_value, text(d, "views"))
+        v.setTextViewText(R.id.stat2_label, text(d, "l_views", "Views"))
+        v.setTextViewText(R.id.stat3_value, text(d, "sessions"))
+        v.setTextViewText(R.id.stat3_label, text(d, "l_sessions", "Sessions"))
+        v.setTextViewText(R.id.stat4_value, text(d, "errors"))
+        v.setTextViewText(R.id.stat4_label, text(d, "l_errors_today", "errors today"))
+    }
+}

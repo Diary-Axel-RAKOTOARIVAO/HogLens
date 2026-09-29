@@ -44,6 +44,71 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
     super.dispose();
   }
 
+  Future<void> _pickWidget(BuildContext context) async {
+    final c = context.colors;
+    final supported = await HomeWidget.isRequestPinWidgetSupported() ?? false;
+    if (!context.mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.8,
+        maxChildSize: 0.94,
+        builder: (ctx, ctrl) => ListView(
+          controller: ctrl,
+          padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 28),
+          children: [
+            Text(tr('Home screen widgets'), style: Theme.of(ctx).textTheme.headlineMedium),
+            const SizedBox(height: 4),
+            Text(
+              supported ? tr('Pick a size. Each shows a different slice of this project.') : tr('Long-press your home screen to add the HogLens widget.'),
+              style: TextStyle(color: c.textMuted),
+            ),
+            const SizedBox(height: 18),
+            for (final k in HomeWidgetKind.values)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card1(
+                  radius: 20,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  onTap: supported
+                      ? () async {
+                          Navigator.pop(ctx);
+                          await HomeWidget.requestPinWidget(name: k.androidName, androidName: k.androidName);
+                        }
+                      : null,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: c.bg, borderRadius: BorderRadius.circular(12)),
+                        child: Text(k.cells, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.text)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(tr(k.title), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                            Text(tr(k.description), style: TextStyle(fontSize: 12.5, color: c.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Icon(SolarIconsOutline.addCircle, size: 20, color: c.textFaint),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickLogo() async {
     final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512);
     if (x != null) {
@@ -196,7 +261,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                           if (!v) return;
                           await ref.read(storeProvider).setWidgetProjectId(p.id);
                           final g = ref.read(glanceProvider(p.id)).value;
-                          if (g != null) await HomeWidgetService.push(p, g);
+                          if (g != null) await HomeWidgetService.pushGlance(p, g);
                           setState(() {});
                         },
                       ),
@@ -204,14 +269,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                   ),
                   const SizedBox(height: 10),
                   TextButton.icon(
-                    onPressed: () async {
-                      final ok = await HomeWidget.isRequestPinWidgetSupported() ?? false;
-                      if (!ok) {
-                        if (context.mounted) showToast(context, tr('Long-press your home screen to add the HogLens widget.'));
-                        return;
-                      }
-                      await HomeWidget.requestPinWidget(name: 'HogLensWidgetProvider', androidName: 'HogLensWidgetProvider');
-                    },
+                    onPressed: () => _pickWidget(context),
                     icon: const Icon(SolarIconsOutline.widgetAdd, size: 18),
                     label: Text(tr('Add to home screen')),
                   ),

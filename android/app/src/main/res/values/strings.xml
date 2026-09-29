@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_description">Unique visitors today for one PostHog project</string>
+    <string name="widget_description">Visitors today, change vs yesterday and the last seven days</string>
+    <string name="widget_desc_small">Unique visitors today</string>
+    <string name="widget_desc_live">People on the site right now</string>
+    <string name="widget_desc_errors">Exceptions today and the top one</string>
+    <string name="widget_desc_overview">Visitors, views, sessions and live</string>
+    <string name="widget_desc_trend">Today’s hourly curve with key numbers</string>
 </resources>
