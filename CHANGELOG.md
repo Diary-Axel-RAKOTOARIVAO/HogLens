@@ -5,6 +5,14 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-29
+
+### Fixed
+- Visitors today on the projects page now matches the dashboard: both count from local midnight, not UTC midnight.
+- Splash screen shows the logo cleanly instead of a cropped white disc, on Android 12+ and older versions, light and dark.
+- Dragging the globe vertically now tilts it the way your finger moves.
+- A little more breathing room around the logo on the projects page.
+
 ## [0.9.0] - 2026-09-29
 
 ### Added
