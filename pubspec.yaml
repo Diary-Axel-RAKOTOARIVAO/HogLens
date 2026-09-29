@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.7.0+11
+version: 0.8.0+12
 
 environment:
   sdk: ^3.13.2
@@ -48,11 +48,14 @@ dependencies:
   uuid: ^4.5.1
   shimmer: ^4.0.0
   url_launcher: ^6.3.2
+  flutter_svg: ^2.3.0
   package_info_plus: ^10.2.1
   home_widget: ^0.8.0
   workmanager: ^0.10.0
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
   flutter_test:
     sdk: flutter
 
@@ -68,11 +71,9 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/brand/logo.svg
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -104,3 +105,26 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/brand/icon_full.png
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/brand/icon_foreground.png
+  adaptive_icon_monochrome: assets/brand/icon_foreground.png
+  remove_alpha_ios: true
+  min_sdk_android: 24
+
+flutter_native_splash:
+  color: "#EBEBEB"
+  color_dark: "#0A0A0A"
+  image: assets/brand/splash_light.png
+  image_dark: assets/brand/splash_dark.png
+  android_12:
+    color: "#EBEBEB"
+    color_dark: "#0A0A0A"
+    image: assets/brand/splash_light.png
+    image_dark: assets/brand/splash_dark.png
+  ios: true
+  android: true

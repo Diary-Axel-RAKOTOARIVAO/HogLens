@@ -5,6 +5,16 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-29
+
+### Added
+- The HogLens logo everywhere: launcher icons on Android (adaptive, with a monochrome variant) and iOS, a light and dark splash screen, the projects page header, the empty state and the About card.
+- "Today" time range, from midnight to now with hourly buckets, compared with the same hours yesterday. It is the default when opening a project, matching the visitors-today number on the projects page.
+
+### Changed
+- Base theme uses the logo orange for primary buttons, the add-widget pill and progress indicators. Projects keep their own accent colors.
+- Language options show flags instead of globe icons.
+
 ## [0.7.0] - 2026-09-29
 
 ### Added
