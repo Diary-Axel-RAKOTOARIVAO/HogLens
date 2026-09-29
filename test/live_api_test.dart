@@ -61,6 +61,15 @@ void main() {
         }, timeout: slow);
       }
 
+      test('projects page and dashboard agree on visitors today', () async {
+        final repo = StatsRepository(client, id);
+        final g = await repo.glance();
+        final s = await repo.fetch(RangeSelection.today.resolve(DateTime.now()));
+        print('glance today ${g.today} vs dashboard today ${s.visitors.current}; week ${g.week}; daily ${g.daily}');
+        expect((g.today - s.visitors.current).abs(), lessThanOrEqualTo(3));
+        expect(g.daily.length, 7);
+      }, timeout: slow);
+
       test('live feed, errors and drill-down', () async {
         final repo = InsightsRepository(client, id);
         final r = RangeSelection.week.resolve(DateTime.now());

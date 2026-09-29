@@ -31,8 +31,8 @@ class HomeScreen extends ConsumerWidget {
             titleSpacing: Spacing.page,
             title: Row(
               children: [
-                const BrandLogo(size: 40),
-                const SizedBox(width: 12),
+                const Padding(padding: EdgeInsets.all(6), child: BrandLogo(size: 40)),
+                const SizedBox(width: 8),
                 Flexible(
                   child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

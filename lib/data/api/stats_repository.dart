@@ -1,3 +1,4 @@
+import '../models/insights.dart';
 import '../models/stats.dart';
 import 'posthog_client.dart';
 
@@ -95,6 +96,45 @@ ORDER BY bucket
       topEvents: results[2].rows.map((r) => TopEvent('${r[0]}', n(r[1]))).toList(),
       fetchedAt: now,
     );
+  }
+
+  /// Unique visitors per local day for the last 7 days plus the deduplicated
+  /// total. Uses the same local-midnight window as the Today range, so the
+  /// projects page and the dashboard agree.
+  Future<Glance> glance() async {
+    final now = DateTime.now();
+    final range = StatRange(
+      start: DateTime(now.year, now.month, now.day - 6),
+      end: now,
+      label: '7d',
+      kind: RangeKind.week,
+    );
+    final off = now.timeZoneOffset.inMinutes;
+    final shift = off == 0 ? 'timestamp' : (off > 0 ? 'timestamp + INTERVAL $off MINUTE' : 'timestamp - INTERVAL ${-off} MINUTE');
+    final results = await Future.wait([
+      _client.query(
+        _projectId,
+        'SELECT toStartOfDay($shift) AS d, uniq(person_id) FROM events '
+        'WHERE $_isView AND ${range.whereCurrent} GROUP BY d ORDER BY d',
+        name: 'hoglens_glance',
+      ),
+      _client.query(
+        _projectId,
+        'SELECT uniq(person_id) FROM events WHERE $_isView AND ${range.whereCurrent}',
+        name: 'hoglens_glance_week',
+      ),
+    ]);
+    final pts = <SeriesPoint>[];
+    for (final row in results[0].rows) {
+      // Buckets are local days expressed as naive timestamps; read the date part.
+      final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})').firstMatch('${row[0]}');
+      if (m == null) continue;
+      final t = DateTime(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!));
+      final v = row.length > 1 ? row[1] : 0;
+      pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
+    }
+    final w = results[1].firstCell;
+    return Glance(daily: fill(pts, range).map((p) => p.v).toList(), week: w is num ? w : num.tryParse('$w') ?? 0);
   }
 
   /// Fills missing buckets with zeros so charts have a stable x-axis.

@@ -206,39 +206,7 @@ class GlanceNotifier extends AsyncNotifier<Glance> {
       encode: (v) => v.toJson(),
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
-        const isView = "event IN ('\$pageview', '\$screen')";
-        const window = 'timestamp >= toStartOfDay(now()) - INTERVAL 6 DAY AND timestamp <= now()';
-        final results = await Future.wait([
-          client.query(
-            project.projectId,
-            'SELECT toStartOfDay(timestamp) AS d, uniq(person_id) FROM events '
-            'WHERE $isView AND $window GROUP BY d ORDER BY d',
-            name: 'hoglens_glance',
-          ),
-          client.query(
-            project.projectId,
-            'SELECT uniq(person_id) FROM events WHERE $isView AND $window',
-            name: 'hoglens_glance_week',
-          ),
-        ]);
-        final pts = <SeriesPoint>[];
-        for (final row in results[0].rows) {
-          final t = DateTime.tryParse('${row[0]}')?.toLocal();
-          final v = row.length > 1 ? row[1] : 0;
-          if (t != null) pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
-        }
-        final now = DateTime.now();
-        final range = StatRange(
-          start: DateTime(now.year, now.month, now.day - 6),
-          end: now,
-          label: '7d',
-          kind: RangeKind.week,
-        );
-        final w = results[1].firstCell;
-        final glance = Glance(
-          daily: StatsRepository.fill(pts, range).map((p) => p.v).toList(),
-          week: w is num ? w : num.tryParse('$w') ?? 0,
-        );
+        final glance = await StatsRepository(client, project.projectId).glance();
         if (ref.read(storeProvider).widgetProjectId == projectId) {
           unawaited(HomeWidgetService.pushGlance(project, glance));
         }

@@ -159,25 +159,8 @@ class HomeWidgetService {
       final lang = store.prefs.getString('hoglens.language');
       currentLanguage = AppLanguage.values.asNameMap()[lang ?? ''] ?? AppLanguage.en;
 
-      const isView = "event IN ('\$pageview', '\$screen')";
-      const window = 'timestamp >= toStartOfDay(now()) - INTERVAL 6 DAY AND timestamp <= now()';
-      final results = await Future.wait([
-        client.query(project.projectId,
-            'SELECT toStartOfDay(timestamp) AS d, uniq(person_id) FROM events WHERE $isView AND $window GROUP BY d ORDER BY d',
-            name: 'hoglens_glance'),
-        client.query(project.projectId, 'SELECT uniq(person_id) FROM events WHERE $isView AND $window', name: 'hoglens_glance_week'),
-      ]);
-      final pts = <SeriesPoint>[];
-      for (final row in results[0].rows) {
-        final t = DateTime.tryParse('${row[0]}')?.toLocal();
-        final v = row.length > 1 ? row[1] : 0;
-        if (t != null) pts.add(SeriesPoint(t, v is num ? v : num.tryParse('$v') ?? 0));
-      }
+      await pushGlance(project, await StatsRepository(client, project.projectId).glance());
       final now = DateTime.now();
-      final weekRange = StatRange(start: DateTime(now.year, now.month, now.day - 6), end: now, label: '7d', kind: RangeKind.week);
-      final w = results[1].firstCell;
-      await pushGlance(project, Glance(daily: StatsRepository.fill(pts, weekRange).map((p) => p.v).toList(), week: w is num ? w : 0));
-
       final today = RangeSelection.today.resolve(now);
       final stats = await StatsRepository(client, project.projectId).fetch(today);
       await pushToday(project, stats);

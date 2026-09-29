@@ -69,7 +69,7 @@ class _GlobeState extends State<Globe> with SingleTickerProviderStateMixin {
       onPanStart: (_) => _dragging = true,
       onPanUpdate: (d) => setState(() {
         _yaw += d.delta.dx / r;
-        _pitch = (_pitch - d.delta.dy / r).clamp(-1.1, 1.1);
+        _pitch = (_pitch + d.delta.dy / r).clamp(-1.1, 1.1);
         _velocity = d.delta.dx / r * 0.5;
       }),
       onPanEnd: (_) => _dragging = false,
