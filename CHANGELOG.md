@@ -5,6 +5,11 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-29
+
+### Added
+- Six Android home-screen widgets, smallest to largest: Visitors (2×1), Live now (2×2), Errors (2×2), Week (3×2), Overview (4×2) and Trend (4×3) with today's hourly curve. Pick them from Project settings → Add to home screen. All follow the same project, adapt to dark mode and refresh every 30 minutes in the background.
+
 ## [0.8.1] - 2026-09-29
 
 ### Fixed
