@@ -5,6 +5,11 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-29
+
+### Fixed
+- Launcher icons had too much padding; the logo now fills the icon properly on Android and iOS.
+
 ## [0.8.0] - 2026-09-29
 
 ### Added
