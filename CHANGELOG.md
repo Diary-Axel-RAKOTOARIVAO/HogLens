@@ -5,6 +5,11 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-10-01
+
+### Added
+- Refresh button next to the time range on the dashboard. It reloads the stats and every custom widget, and spins while loading.
+
 ## [0.9.1] - 2026-09-29
 
 ### Fixed
