@@ -29,6 +29,7 @@ ORDER BY timestamp DESC
 LIMIT $limit
 ''',
       name: 'hoglens_live',
+      fresh: true,
     );
     return [
       for (final row in r.rows)

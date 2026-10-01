@@ -12,6 +12,7 @@ import '../../data/models/project.dart';
 import '../../data/models/stats.dart';
 import '../../data/providers/providers.dart';
 import '../../shared/ui.dart';
+import '../../shared/visible_polling.dart';
 import '../widgets/custom_widget_tile.dart';
 import '../widgets/widget_builder_sheet.dart';
 import 'charts.dart';
@@ -28,7 +29,13 @@ class DashboardScreen extends ConsumerStatefulWidget {
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> with VisiblePolling {
+  @override
+  Duration get pollInterval => const Duration(seconds: 60);
+
+  @override
+  Future<void> poll() => _refresh();
+
   bool _editing = false;
   HeroMode _hero = HeroMode.unique;
 
@@ -42,6 +49,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     } catch (_) {
       // Error surfaces in the UI via the provider state.
     }
+    markPolled();
   }
 
   void _showProjectMenu(BuildContext context, PhProject project) {

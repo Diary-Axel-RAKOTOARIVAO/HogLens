@@ -11,6 +11,7 @@ import '../../core/util/format.dart';
 import '../../data/models/insights.dart';
 import '../../data/providers/providers.dart';
 import '../../shared/ui.dart';
+import '../../shared/visible_polling.dart';
 
 /// Tail of the newest events, refreshed every ten seconds.
 class LiveFeedScreen extends ConsumerStatefulWidget {
@@ -21,7 +22,17 @@ class LiveFeedScreen extends ConsumerStatefulWidget {
   ConsumerState<LiveFeedScreen> createState() => _LiveFeedScreenState();
 }
 
-class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> {
+class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> with VisiblePolling {
+  @override
+  Duration get pollInterval => const Duration(seconds: 10);
+
+  @override
+  Future<void> poll() async {
+    final key = (widget.projectId, _applied);
+    ref.invalidate(liveFeedProvider(key));
+    await ref.read(liveFeedProvider(key).future);
+  }
+
   final _filter = TextEditingController();
   String _applied = '';
 

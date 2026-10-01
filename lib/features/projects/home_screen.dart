@@ -12,14 +12,32 @@ import '../../core/util/format.dart';
 import '../../data/models/project.dart';
 import '../../data/providers/providers.dart';
 import '../../shared/ui.dart';
+import '../../shared/visible_polling.dart';
 import '../dashboard/charts.dart';
 import 'demo.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> with VisiblePolling {
+  @override
+  Duration get pollInterval => const Duration(seconds: 60);
+
+  @override
+  Future<void> poll() async {
+    final ids = ref.read(projectsProvider).map((p) => p.id).toList();
+    for (final id in ids) {
+      ref.invalidate(glanceProvider(id));
+    }
+    await Future.wait(ids.map((id) => ref.read(glanceProvider(id).future).then<void>((_) {}, onError: (_) {})));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final projects = ref.watch(projectsProvider);
     final c = context.colors;
 

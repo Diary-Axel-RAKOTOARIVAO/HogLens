@@ -17,7 +17,8 @@ class PosthogException implements Exception {
 abstract class PhApi {
   Future<List<RemoteProject>> listProjects();
   Future<RemoteProject> getProject(int projectId);
-  Future<QueryResult> query(int projectId, String hogql, {String? name});
+  /// [fresh] asks PostHog to recompute instead of serving a cached result.
+  Future<QueryResult> query(int projectId, String hogql, {String? name, bool fresh = false});
 
   /// Runs a PostHog insight query (Lifecycle, Retention, Paths, Trends…)
   /// and returns its `results`. These are computed and cached server-side,
@@ -82,13 +83,14 @@ class PosthogClient implements PhApi {
 
   /// Runs a HogQL query and returns columns + rows.
   @override
-  Future<QueryResult> query(int projectId, String hogql, {String? name}) async {
+  Future<QueryResult> query(int projectId, String hogql, {String? name, bool fresh = false}) async {
     await _slots.acquire();
     try {
       final res = await _guard(() => _dio.post(
             '/api/projects/$projectId/query/',
             data: {
               'query': {'kind': 'HogQLQuery', 'query': hogql},
+              if (fresh) 'refresh': 'force_blocking',
               'name': ?name,
             },
           ));

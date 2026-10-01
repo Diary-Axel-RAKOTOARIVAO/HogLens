@@ -24,10 +24,19 @@ import '../storage/project_store.dart';
 final storeProvider = Provider<ProjectStore>((ref) => throw UnimplementedError());
 final cacheProvider = Provider<CacheStore>((ref) => throw UnimplementedError());
 
+bool _isLoaded(AsyncValue<Object?> Function() read) {
+  try {
+    return read().hasValue;
+  } catch (_) {
+    return false;
+  }
+}
+
 /// Emits the last saved value first (marked as cached), then the fresh one.
 /// If the fetch fails and a saved value exists, that value is kept.
 Future<T> _cached<T>({
   required void Function(T stale) emit,
+  bool loaded = false,
   required CacheStore cache,
   required String key,
   required T Function(Map<String, dynamic> data, DateTime savedAt) decode,
@@ -35,7 +44,9 @@ Future<T> _cached<T>({
   required Future<T> Function() fetch,
 }) async {
   T? stale;
-  final saved = await cache.read(key);
+  // On a refetch the screen already shows data; don't flash the disk copy
+  // (it would show the offline badge for a moment on every poll).
+  final saved = loaded ? null : await cache.read(key);
   if (saved != null) {
     try {
       stale = decode(saved.$1, saved.$2);
@@ -170,6 +181,7 @@ class KeyStatsNotifier extends AsyncNotifier<KeyStats> {
     final cache = ref.read(cacheProvider);
     return _cached<KeyStats>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: cache,
       key: 'stats_${projectId}_${range.cacheKey}',
       decode: (d, at) => KeyStats.fromJson(d).asCached(at),
@@ -200,6 +212,7 @@ class GlanceNotifier extends AsyncNotifier<Glance> {
     if (project == null) return const Glance(daily: [], week: 0);
     return _cached<Glance>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
       key: 'glance_$projectId',
       decode: (d, _) => Glance.fromJson(d),
@@ -228,6 +241,7 @@ class FlagsNotifier extends AsyncNotifier<List<FeatureFlag>> {
     if (project == null) throw PosthogException('Project removed.');
     return _cached<List<FeatureFlag>>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
       key: 'flags_$projectId',
       decode: (d, _) => (d['v'] as List).map((f) => FeatureFlag.fromCache(f as Map<String, dynamic>)).toList(),
@@ -313,16 +327,17 @@ class WidgetResultNotifier extends AsyncNotifier<QueryResult> {
     final range = currentRange(ref);
     return _cached<QueryResult>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
       key: 'widget_${projectId}_${widgetId}_${range.cacheKey}',
       decode: (d, at) => QueryResult.fromJson(d).asCached(at),
       encode: (v) => v.toJson(),
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
-        final current = await client.query(project.projectId, StatsRepository.resolve(spec.hogql, range), name: 'hoglens_widget');
+        final current = await client.query(project.projectId, StatsRepository.resolve(spec.hogql, range), name: 'hoglens_widget', fresh: true);
         if (!spec.compare || spec.kind != WidgetKind.number || !spec.hogql.contains('{range}')) return current;
         final prevRange = StatRange(start: range.previousStart, end: range.start, label: range.label, kind: range.kind);
-        final prev = await client.query(project.projectId, StatsRepository.resolve(spec.hogql, prevRange), name: 'hoglens_widget_prev');
+        final prev = await client.query(project.projectId, StatsRepository.resolve(spec.hogql, prevRange), name: 'hoglens_widget_prev', fresh: true);
         final pv = prev.firstCell;
         return current.withPrevious(pv is num ? pv : num.tryParse('$pv'));
       },
@@ -337,7 +352,7 @@ final widgetResultProvider =
 
 typedef LiveFeedKey = (String projectId, String filter);
 
-/// Latest events, refreshed every ten seconds while watched.
+/// Latest events. The live feed screen polls this while it is visible.
 class LiveFeedNotifier extends AsyncNotifier<List<LiveEvent>> {
   LiveFeedNotifier(this.key);
   final LiveFeedKey key;
@@ -347,8 +362,6 @@ class LiveFeedNotifier extends AsyncNotifier<List<LiveEvent>> {
     final (projectId, filter) = key;
     final project = ref.watch(projectProvider(projectId));
     if (project == null) throw PosthogException('Project removed.');
-    final timer = Timer(const Duration(seconds: 10), () => ref.invalidateSelf());
-    ref.onDispose(timer.cancel);
     final client = await ref.watch(clientProvider(projectId).future);
     return InsightsRepository(client, project.projectId).liveFeed(filter: filter);
   }
@@ -368,6 +381,7 @@ class ErrorsNotifier extends AsyncNotifier<ErrorsReport> {
     final range = currentRange(ref);
     return _cached<ErrorsReport>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
       key: 'errors_${projectId}_${range.cacheKey}',
       decode: (d, _) => ErrorsReport.fromJson(d),
@@ -457,6 +471,7 @@ class LifecycleNotifier extends AsyncNotifier<LifecycleReport> {
     final range = currentRange(ref);
     return _cached<LifecycleReport>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
       key: 'lifecycle_${projectId}_${range.cacheKey}',
       decode: (d, _) => LifecycleReport.fromJson(d),
@@ -481,6 +496,7 @@ class RetentionNotifier extends AsyncNotifier<RetentionReport> {
     if (project == null) throw PosthogException('Project removed.');
     return _cached<RetentionReport>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
       key: 'retention_$projectId',
       decode: (d, _) => RetentionReport.fromJson(d),
@@ -506,6 +522,7 @@ class PathsNotifier extends AsyncNotifier<PathsReport> {
     final range = currentRange(ref);
     return _cached<PathsReport>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
       key: 'paths_${projectId}_${range.cacheKey}',
       decode: (d, _) => PathsReport.fromJson(d),
@@ -531,6 +548,7 @@ class GeoNotifier extends AsyncNotifier<GeoReport> {
     final range = currentRange(ref);
     return _cached<GeoReport>(
       emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
       key: 'geo_${projectId}_${range.cacheKey}',
       decode: (d, _) => GeoReport.fromJson(d),

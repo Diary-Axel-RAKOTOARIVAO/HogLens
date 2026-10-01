@@ -14,7 +14,7 @@ class DemoClient implements PhApi {
   Future<RemoteProject> getProject(int projectId) async => const RemoteProject(id: 1, name: 'Demo');
 
   @override
-  Future<QueryResult> query(int projectId, String hogql, {String? name}) async {
+  Future<QueryResult> query(int projectId, String hogql, {String? name, bool fresh = false}) async {
     await Future.delayed(Duration(milliseconds: 250 + _rng.nextInt(400)));
     final q = hogql.toLowerCase();
     final now = DateTime.now();
