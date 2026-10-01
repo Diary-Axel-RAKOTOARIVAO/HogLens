@@ -5,6 +5,17 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-01
+
+First stable release. Same app as 0.10.0, now considered ready for everyday use.
+
+### Highlights
+- Any number of PostHog projects on US, EU or self-hosted instances, each with its own name, logo and accent, keys kept in the device keychain.
+- Dashboard with unique visitors, events, live pulse, sessions and trends over Today, rolling, this-month or custom windows, plus custom HogQL widgets.
+- Live feed, errors, behavior (lifecycle, retention, paths), a 3D world view and feature flags.
+- Six Android home-screen widgets from 2×1 to 4×3.
+- Offline copies of everything already loaded, refresh-while-visible, English and French, light and dark themes.
+
 ## [0.10.0] - 2026-10-01
 
 ### Added
