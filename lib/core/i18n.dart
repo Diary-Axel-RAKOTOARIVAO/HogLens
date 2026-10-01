@@ -53,6 +53,7 @@ const Map<String, String> _fr = {
   'Dark': 'Sombre',
   'Language': 'Langue',
   'Today': 'Aujourd’hui',
+  'Refresh': 'Actualiser',
   'Since midnight, hour by hour': 'Depuis minuit, heure par heure',
   'vs yesterday': 'vs hier',
   'About': 'À propos',

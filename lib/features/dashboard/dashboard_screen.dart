@@ -216,7 +216,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               padding: const EdgeInsets.fromLTRB(Spacing.page, 8, Spacing.page, 110),
               sliver: SliverList.list(
                 children: [
-                  _RangeBar(selection: selection),
+                  _RangeBar(selection: selection, onRefresh: _refresh),
                   if (stats.value?.fromCache == true) ...[
                     const SizedBox(height: 12),
                     _OfflineBadge(savedAt: stats.value!.fetchedAt),
@@ -342,8 +342,9 @@ class _MenuRow extends StatelessWidget {
 
 /// Shows only the active range; tapping opens the drawer of options.
 class _RangeBar extends ConsumerWidget {
-  const _RangeBar({required this.selection});
+  const _RangeBar({required this.selection, required this.onRefresh});
   final RangeSelection selection;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -383,7 +384,70 @@ class _RangeBar extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(width: 8),
+        _RefreshButton(onRefresh: onRefresh),
       ],
+    );
+  }
+}
+
+/// Round button beside the range pill; the icon spins until the refresh
+/// completes, and taps are ignored while one is running.
+class _RefreshButton extends StatefulWidget {
+  const _RefreshButton({required this.onRefresh});
+  final Future<void> Function() onRefresh;
+
+  @override
+  State<_RefreshButton> createState() => _RefreshButtonState();
+}
+
+class _RefreshButtonState extends State<_RefreshButton> with SingleTickerProviderStateMixin {
+  late final AnimationController _spin = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+  bool _busy = false;
+
+  Future<void> _run() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    _spin.repeat();
+    try {
+      await widget.onRefresh();
+    } finally {
+      if (mounted) {
+        // Finish the current turn so the icon lands upright.
+        await _spin.forward(from: _spin.value);
+        _spin.reset();
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Tooltip(
+      message: tr('Refresh'),
+      child: Material(
+        color: c.surface,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: _run,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: RotationTransition(
+              turns: _spin,
+              child: Icon(SolarIconsOutline.refresh, size: 18, color: _busy ? c.text : c.textMuted),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
