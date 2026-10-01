@@ -5,6 +5,16 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-01
+
+### Added
+- Data stays fresh while you look at it: the projects page and the dashboard refresh every minute, the live feed every ten seconds. Polling only runs while that screen is open and the app is in the foreground; coming back to the app refreshes anything older than the interval right away.
+
+### Fixed
+- The live feed kept querying PostHog every ten seconds after leaving the screen. It now stops as soon as the screen is closed or the app goes to the background.
+- The live feed and custom widgets ask PostHog for a fresh result instead of a cached one.
+- Refreshes no longer flash the "Offline" badge for a moment.
+
 ## [0.9.2] - 2026-10-01
 
 ### Added
