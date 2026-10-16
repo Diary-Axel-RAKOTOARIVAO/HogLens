@@ -22,7 +22,7 @@ class PhProject {
     required this.host,
     required this.projectId,
     this.logoPath,
-    this.accentIndex = 0,
+    this.accentArgb = 0xFFFF6600,
     required this.createdAt,
   });
 
@@ -38,12 +38,13 @@ class PhProject {
 
   /// Absolute path to the logo file copied into app documents, or null.
   final String? logoPath;
-  final int accentIndex;
+  /// Accent as ARGB. Older installs stored an index; see [fromJson].
+  final int accentArgb;
   final DateTime createdAt;
 
   static const demoHost = 'demo://hoglens';
 
-  Color get accent => Accents.at(accentIndex);
+  Color get accent => Color(accentArgb);
   bool get isDemo => host == demoHost;
 
   PhHost get hostKind {
@@ -71,7 +72,7 @@ class PhProject {
     int? projectId,
     String? logoPath,
     bool clearLogo = false,
-    int? accentIndex,
+    Color? accent,
   }) =>
       PhProject(
         id: id,
@@ -79,7 +80,7 @@ class PhProject {
         host: host ?? this.host,
         projectId: projectId ?? this.projectId,
         logoPath: clearLogo ? null : (logoPath ?? this.logoPath),
-        accentIndex: accentIndex ?? this.accentIndex,
+        accentArgb: accent?.toARGB32() ?? accentArgb,
         createdAt: createdAt,
       );
 
@@ -89,7 +90,7 @@ class PhProject {
         'host': host,
         'projectId': projectId,
         'logoPath': logoPath,
-        'accentIndex': accentIndex,
+        'accent': accentArgb,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -99,7 +100,8 @@ class PhProject {
         host: j['host'] as String,
         projectId: (j['projectId'] as num).toInt(),
         logoPath: j['logoPath'] as String?,
-        accentIndex: (j['accentIndex'] as num?)?.toInt() ?? 0,
+        accentArgb: (j['accent'] as num?)?.toInt() ??
+            Accents.fromLegacyIndex((j['accentIndex'] as num?)?.toInt() ?? 0).toARGB32(),
         createdAt: DateTime.tryParse(j['createdAt'] as String? ?? '') ??
             DateTime.now(),
       );

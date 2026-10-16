@@ -15,6 +15,8 @@ import '../../data/api/posthog_client.dart';
 import '../../data/models/project.dart';
 import '../../data/models/stats.dart';
 import '../../data/providers/providers.dart';
+import '../../shared/accent_picker.dart';
+import '../../shared/logo_colors.dart';
 import '../../shared/ui.dart';
 
 /// Three-step flow: connect (host + key) → choose project → brand it.
@@ -38,7 +40,9 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
   List<RemoteProject> _remote = const [];
   RemoteProject? _picked;
   File? _logo;
-  int _accent = 0;
+  Color _accent = Brand.orange;
+  bool _accentTouched = false;
+  List<Color> _logoColors = const [];
 
   String get _baseUrl => _host == PhHost.custom
       ? _customHost.text.trim().replaceAll(RegExp(r'/+$'), '')
@@ -136,7 +140,15 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
 
   Future<void> _pickLogo() async {
     final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512);
-    if (x != null) setState(() => _logo = File(x.path));
+    if (x == null) return;
+    final colors = await extractLogoColors(x.path);
+    if (!mounted) return;
+    setState(() {
+      _logo = File(x.path);
+      _logoColors = colors;
+      // Match the brand automatically unless a color was already chosen.
+      if (!_accentTouched && colors.isNotEmpty) _accent = colors.first;
+    });
   }
 
   Future<void> _save() async {
@@ -149,7 +161,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
           projectId: _picked!.id,
           apiKey: _key.text.trim(),
           logo: _logo,
-          accentIndex: _accent,
+          accent: _accent,
         );
     if (!mounted) return;
     context.pop();
@@ -334,7 +346,7 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
       name: _name.text.isEmpty ? 'Project' : _name.text,
       host: _baseUrl,
       projectId: _picked?.id ?? 0,
-      accentIndex: _accent,
+      accentArgb: _accent.toARGB32(),
       createdAt: DateTime.now(),
     );
     return [
@@ -366,7 +378,12 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
             ),
             const SizedBox(height: 12),
             TextButton(
-              onPressed: _logo == null ? _pickLogo : () => setState(() => _logo = null),
+              onPressed: _logo == null
+                  ? _pickLogo
+                  : () => setState(() {
+                        _logo = null;
+                        _logoColors = const [];
+                      }),
               child: Text(_logo == null ? tr('Upload logo') : tr('Remove logo')),
             ),
           ],
@@ -384,45 +401,20 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
       const SizedBox(height: 24),
       Text(tr('ACCENT'), style: Theme.of(context).textTheme.labelSmall),
       const SizedBox(height: 10),
-      AccentPicker(value: _accent, onChanged: (i) => setState(() => _accent = i)),
+      AccentField(
+        value: _accent,
+        logoColors: _logoColors,
+        onChanged: (c) => setState(() {
+          _accent = c;
+          _accentTouched = true;
+        }),
+      ),
       const SizedBox(height: 32),
       FilledButton(
         onPressed: _busy ? null : _save,
         child: _busy ? const _Spinner() : Text(tr('Add project')),
       ),
     ];
-  }
-}
-
-class AccentPicker extends StatelessWidget {
-  const AccentPicker({super.key, required this.value, required this.onChanged});
-  final int value;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        for (var i = 0; i < Accents.all.length; i++)
-          GestureDetector(
-            onTap: () => onChanged(i),
-            child: AnimatedContainer(
-              duration: 150.ms,
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Accents.all[i],
-                shape: BoxShape.circle,
-                border: Border.all(color: value == i ? c.text : Colors.transparent, width: 2.5),
-              ),
-              child: value == i ? const Icon(Icons.check, color: Colors.white, size: 18) : null,
-            ),
-          ),
-      ],
-    );
   }
 }
 

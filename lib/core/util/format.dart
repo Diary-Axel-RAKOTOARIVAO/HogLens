@@ -30,6 +30,18 @@ class Fmt {
     return ago('${d.inDays}${fr ? 'j' : 'd'}');
   }
 
+  /// "just now", "25s ago", "3m ago", "2h ago": finer than [relative].
+  static String ago(DateTime t) {
+    final d = DateTime.now().difference(t);
+    final fr = i18n.currentLanguage == i18n.AppLanguage.fr;
+    String f(String v) => fr ? 'il y a $v' : '$v ago';
+    if (d.inSeconds < 10) return i18n.tr('just now');
+    if (d.inSeconds < 60) return f('${d.inSeconds}s');
+    if (d.inMinutes < 60) return f('${d.inMinutes}m');
+    if (d.inHours < 24) return f('${d.inHours}h');
+    return f('${d.inDays}${fr ? 'j' : 'd'}');
+  }
+
   static String shortDay(DateTime t) => DateFormat('E').format(t);
   static String monthDay(DateTime t) => i18n.monthDay(t);
   static String hour(DateTime t) => DateFormat('HH:mm').format(t);

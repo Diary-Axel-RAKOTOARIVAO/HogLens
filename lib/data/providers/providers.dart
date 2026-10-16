@@ -7,6 +7,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'dart:ui' show Color;
+
+import '../../core/theme/tokens.dart';
 import '../api/behavior_repository.dart';
 import '../api/demo_client.dart';
 import '../api/insights_repository.dart';
@@ -23,6 +26,8 @@ import '../storage/project_store.dart';
 /// Opened once in main() and overridden into the ProviderScope.
 final storeProvider = Provider<ProjectStore>((ref) => throw UnimplementedError());
 final cacheProvider = Provider<CacheStore>((ref) => throw UnimplementedError());
+
+String _day(DateTime t) => '${t.year}${t.month}${t.day}';
 
 bool _isLoaded(AsyncValue<Object?> Function() read) {
   try {
@@ -42,6 +47,7 @@ Future<T> _cached<T>({
   required T Function(Map<String, dynamic> data, DateTime savedAt) decode,
   required Map<String, dynamic> Function(T value) encode,
   required Future<T> Function() fetch,
+  T Function(T stale)? whenOffline,
 }) async {
   T? stale;
   // On a refetch the screen already shows data; don't flash the disk copy
@@ -60,7 +66,7 @@ Future<T> _cached<T>({
     await cache.write(key, encode(fresh));
     return fresh;
   } catch (e) {
-    if (stale != null) return stale;
+    if (stale != null) return whenOffline == null ? stale : whenOffline(stale);
     rethrow;
   }
 }
@@ -79,7 +85,7 @@ class ProjectsNotifier extends Notifier<List<PhProject>> {
     required int projectId,
     required String apiKey,
     File? logo,
-    int accentIndex = 0,
+    Color accent = Brand.orange,
   }) async {
     final id = const Uuid().v4();
     await _store.writeKey(id, apiKey);
@@ -91,7 +97,7 @@ class ProjectsNotifier extends Notifier<List<PhProject>> {
       host: host,
       projectId: projectId,
       logoPath: logoPath,
-      accentIndex: accentIndex,
+      accentArgb: accent.toARGB32(),
       createdAt: DateTime.now(),
     );
     state = [...state, p];
@@ -185,6 +191,7 @@ class KeyStatsNotifier extends AsyncNotifier<KeyStats> {
       cache: cache,
       key: 'stats_${projectId}_${range.cacheKey}',
       decode: (d, at) => KeyStats.fromJson(d).asCached(at),
+      whenOffline: (v) => v.asCached(v.fetchedAt, offline: true),
       encode: (v) => v.toJson(),
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
@@ -198,7 +205,7 @@ class KeyStatsNotifier extends AsyncNotifier<KeyStats> {
   }
 }
 
-final keyStatsProvider = AsyncNotifierProvider.family<KeyStatsNotifier, KeyStats, String>(KeyStatsNotifier.new);
+final keyStatsProvider = AsyncNotifierProvider.autoDispose.family<KeyStatsNotifier, KeyStats, String>(KeyStatsNotifier.new);
 
 /// Unique visitors per day for the last 7 days plus the 7-day unique total,
 /// used by the project cards and the home totals. Two queries per project.
@@ -214,7 +221,7 @@ class GlanceNotifier extends AsyncNotifier<Glance> {
       emit: (v) => state = AsyncData(v),
       loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
-      key: 'glance_$projectId',
+      key: 'glance_${projectId}_${_day(DateTime.now())}',
       decode: (d, _) => Glance.fromJson(d),
       encode: (v) => v.toJson(),
       fetch: () async {
@@ -254,7 +261,7 @@ class FlagsNotifier extends AsyncNotifier<List<FeatureFlag>> {
   }
 }
 
-final flagsProvider = AsyncNotifierProvider.family<FlagsNotifier, List<FeatureFlag>, String>(FlagsNotifier.new);
+final flagsProvider = AsyncNotifierProvider.autoDispose.family<FlagsNotifier, List<FeatureFlag>, String>(FlagsNotifier.new);
 
 // ---- custom widgets -----------------------------------------------------
 
@@ -331,6 +338,7 @@ class WidgetResultNotifier extends AsyncNotifier<QueryResult> {
       cache: ref.read(cacheProvider),
       key: 'widget_${projectId}_${widgetId}_${range.cacheKey}',
       decode: (d, at) => QueryResult.fromJson(d).asCached(at),
+      whenOffline: (v) => v.asCached(v.savedAt ?? DateTime.now(), offline: true),
       encode: (v) => v.toJson(),
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
@@ -346,7 +354,7 @@ class WidgetResultNotifier extends AsyncNotifier<QueryResult> {
 }
 
 final widgetResultProvider =
-    AsyncNotifierProvider.family<WidgetResultNotifier, QueryResult, CustomWidgetKey>(WidgetResultNotifier.new);
+    AsyncNotifierProvider.autoDispose.family<WidgetResultNotifier, QueryResult, CustomWidgetKey>(WidgetResultNotifier.new);
 
 // ---- live feed, errors, drill-downs ----------------------------------------
 
@@ -368,7 +376,7 @@ class LiveFeedNotifier extends AsyncNotifier<List<LiveEvent>> {
 }
 
 final liveFeedProvider =
-    AsyncNotifierProvider.family<LiveFeedNotifier, List<LiveEvent>, LiveFeedKey>(LiveFeedNotifier.new);
+    AsyncNotifierProvider.autoDispose.family<LiveFeedNotifier, List<LiveEvent>, LiveFeedKey>(LiveFeedNotifier.new);
 
 class ErrorsNotifier extends AsyncNotifier<ErrorsReport> {
   ErrorsNotifier(this.projectId);
@@ -398,11 +406,11 @@ class ErrorsNotifier extends AsyncNotifier<ErrorsReport> {
   }
 }
 
-final errorsProvider = AsyncNotifierProvider.family<ErrorsNotifier, ErrorsReport, String>(ErrorsNotifier.new);
+final errorsProvider = AsyncNotifierProvider.autoDispose.family<ErrorsNotifier, ErrorsReport, String>(ErrorsNotifier.new);
 
 typedef DrillKey = (String projectId, String event);
 
-final eventDrillProvider = FutureProvider.family<EventDrill, DrillKey>((ref, key) async {
+final eventDrillProvider = FutureProvider.autoDispose.family<EventDrill, DrillKey>((ref, key) async {
   final (projectId, event) = key;
   final project = ref.watch(projectProvider(projectId));
   if (project == null) throw PosthogException('Project removed.');
@@ -484,7 +492,7 @@ class LifecycleNotifier extends AsyncNotifier<LifecycleReport> {
   }
 }
 
-final lifecycleProvider = AsyncNotifierProvider.family<LifecycleNotifier, LifecycleReport, String>(LifecycleNotifier.new);
+final lifecycleProvider = AsyncNotifierProvider.autoDispose.family<LifecycleNotifier, LifecycleReport, String>(LifecycleNotifier.new);
 
 class RetentionNotifier extends AsyncNotifier<RetentionReport> {
   RetentionNotifier(this.projectId);
@@ -509,7 +517,7 @@ class RetentionNotifier extends AsyncNotifier<RetentionReport> {
   }
 }
 
-final retentionProvider = AsyncNotifierProvider.family<RetentionNotifier, RetentionReport, String>(RetentionNotifier.new);
+final retentionProvider = AsyncNotifierProvider.autoDispose.family<RetentionNotifier, RetentionReport, String>(RetentionNotifier.new);
 
 class PathsNotifier extends AsyncNotifier<PathsReport> {
   PathsNotifier(this.projectId);
@@ -535,7 +543,7 @@ class PathsNotifier extends AsyncNotifier<PathsReport> {
   }
 }
 
-final pathsProvider = AsyncNotifierProvider.family<PathsNotifier, PathsReport, String>(PathsNotifier.new);
+final pathsProvider = AsyncNotifierProvider.autoDispose.family<PathsNotifier, PathsReport, String>(PathsNotifier.new);
 
 class GeoNotifier extends AsyncNotifier<GeoReport> {
   GeoNotifier(this.projectId);
@@ -561,4 +569,4 @@ class GeoNotifier extends AsyncNotifier<GeoReport> {
   }
 }
 
-final geoProvider = AsyncNotifierProvider.family<GeoNotifier, GeoReport, String>(GeoNotifier.new);
+final geoProvider = AsyncNotifierProvider.autoDispose.family<GeoNotifier, GeoReport, String>(GeoNotifier.new);

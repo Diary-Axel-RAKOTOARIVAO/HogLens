@@ -9,6 +9,14 @@ class PosthogException implements Exception {
   PosthogException(this.message, {this.statusCode});
   final String message;
   final int? statusCode;
+
+  /// Worth retrying: rate limited, overloaded, or a gateway hiccup.
+  bool get transient =>
+      statusCode == 429 ||
+      statusCode == 502 ||
+      statusCode == 503 ||
+      statusCode == 504 ||
+      message.toLowerCase().contains('too busy');
   @override
   String toString() => message;
 }
@@ -86,7 +94,7 @@ class PosthogClient implements PhApi {
   Future<QueryResult> query(int projectId, String hogql, {String? name, bool fresh = false}) async {
     await _slots.acquire();
     try {
-      final res = await _guard(() => _dio.post(
+      final res = await _retrying(() => _dio.post(
             '/api/projects/$projectId/query/',
             data: {
               'query': {'kind': 'HogQLQuery', 'query': hogql},
@@ -109,7 +117,7 @@ class PosthogClient implements PhApi {
   Future<List<dynamic>> insight(int projectId, Map<String, dynamic> query, {String? name}) async {
     await _slots.acquire();
     try {
-      final res = await _guard(() => _dio.post(
+      final res = await _retrying(() => _dio.post(
             '/api/projects/$projectId/query/',
             data: {'query': query, 'refresh': 'blocking', 'name': ?name},
           ));
@@ -127,6 +135,21 @@ class PosthogClient implements PhApi {
         ));
     final results = (res.data as Map)['results'] as List;
     return results.map((f) => FeatureFlag.fromJson(f as Map<String, dynamic>)).toList();
+  }
+
+  /// PostHog sheds load with "Queries are a little too busy right now" and
+  /// rate limits with 429. Those pass after a moment, so retry three times with
+  /// backoff before reporting a failure.
+  Future<Response<dynamic>> _retrying(Future<Response<dynamic>> Function() call) async {
+    const delays = [Duration(milliseconds: 900), Duration(milliseconds: 2500), Duration(seconds: 5)];
+    for (var attempt = 0;; attempt++) {
+      try {
+        return await _guard(call);
+      } on PosthogException catch (e) {
+        if (!e.transient || attempt >= delays.length) rethrow;
+        await Future<void>.delayed(delays[attempt]);
+      }
+    }
   }
 
   Future<Response<dynamic>> _guard(Future<Response<dynamic>> Function() call) async {

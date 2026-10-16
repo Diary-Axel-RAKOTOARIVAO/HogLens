@@ -10,6 +10,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/util/format.dart';
 import '../../data/providers/providers.dart';
 import '../../shared/ui.dart';
+import '../../shared/visible_polling.dart';
 import 'globe.dart';
 
 /// Visitors by country on a spinning globe, then the ranked list.
@@ -30,7 +31,12 @@ class WorldScreen extends ConsumerWidget {
         leadingWidth: 76,
         leading: Padding(
           padding: const EdgeInsets.only(left: Spacing.page),
-          child: Center(child: IconCircleButton(icon: SolarIconsOutline.altArrowLeft, onTap: () => context.pop())),
+          child: Center(
+            child: IconCircleButton(
+              icon: SolarIconsOutline.altArrowLeft,
+              onTap: () => context.pop(),
+            ),
+          ),
         ),
         titleSpacing: 12,
         title: Column(
@@ -38,78 +44,161 @@ class WorldScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(tr('Worldwide')),
-            Text(range.kind.name == 'thisMonth' || range.kind.name == 'custom' || range.kind.name == 'today' ? range.label : '${tr('Last')} ${range.label}',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textMuted)),
+            Text(
+              range.kind.name == 'thisMonth' ||
+                      range.kind.name == 'custom' ||
+                      range.kind.name == 'today'
+                  ? range.label
+                  : '${tr('Last')} ${range.label}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: c.textMuted,
+              ),
+            ),
           ],
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
+      body: RefreshWhileVisible(
+        interval: const Duration(seconds: 60),
+        onPoll: () async {
           ref.invalidate(geoProvider(projectId));
-          try {
-            await ref.read(geoProvider(projectId).future);
-          } catch (_) {}
+          await ref.read(geoProvider(projectId).future);
         },
-        child: geo.when(
-          skipLoadingOnRefresh: true,
-          loading: () => ListView(padding: const EdgeInsets.all(Spacing.page), children: const [Skeleton(height: 380, radius: 28), SizedBox(height: 12), Skeleton(height: 300, radius: 28)]),
-          error: (e, _) => ListView(padding: const EdgeInsets.all(Spacing.page), children: [ErrorCard(message: '$e', onRetry: () => ref.invalidate(geoProvider(projectId)))]),
-          data: (r) {
-            final total = r.totalVisitors;
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-              padding: const EdgeInsets.fromLTRB(Spacing.page, 4, Spacing.page, 40),
-              children: [
-                Card1(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(child: CardLabel(tr('Visitors by country'), icon: SolarIconsOutline.global)),
-                          Text('${r.countries.length} ${tr('countries')}', style: TextStyle(fontSize: 12.5, color: c.textMuted)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      LayoutBuilder(
-                        builder: (context, box) => Globe(countries: r.countries, accent: accent, size: box.maxWidth.clamp(200, 360)),
-                      ),
-                      Text('Drag to spin', style: TextStyle(fontSize: 11.5, color: c.textFaint)),
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 300.ms),
-                const SizedBox(height: Spacing.gap),
-                Card1(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(child: Text(tr('Top countries'), style: Theme.of(context).textTheme.titleLarge)),
-                          Text('${Fmt.compact(total)} ${tr('visitors')}', style: TextStyle(fontSize: 13, color: c.textMuted)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (r.countries.isEmpty)
-                        Text(tr('No GeoIP data in this window.'), style: TextStyle(color: c.textFaint))
-                      else
-                        for (var i = 0; i < r.countries.length.clamp(0, 12); i++) ...[
-                          _CountryRow(
-                            flag: r.countries[i].flag,
-                            name: r.countries[i].name,
-                            visitors: r.countries[i].visitors,
-                            share: total == 0 ? 0 : r.countries[i].visitors / total,
-                            fraction: r.countries.first.visitors == 0 ? 0 : r.countries[i].visitors / r.countries.first.visitors,
-                            color: accent.withValues(alpha: (1 - i * 0.07).clamp(0.3, 1.0)),
-                          ),
-                          if (i != r.countries.length.clamp(0, 12) - 1) const SizedBox(height: 14),
-                        ],
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 300.ms, delay: 80.ms),
-              ],
-            );
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(geoProvider(projectId));
+            try {
+              await ref.read(geoProvider(projectId).future);
+            } catch (_) {}
           },
+          child: geo.when(
+            skipLoadingOnRefresh: true,
+            loading: () => ListView(
+              padding: const EdgeInsets.all(Spacing.page),
+              children: const [
+                Skeleton(height: 380, radius: 28),
+                SizedBox(height: 12),
+                Skeleton(height: 300, radius: 28),
+              ],
+            ),
+            error: (e, _) => ListView(
+              padding: const EdgeInsets.all(Spacing.page),
+              children: [
+                ErrorCard(
+                  message: '$e',
+                  onRetry: () => ref.invalidate(geoProvider(projectId)),
+                ),
+              ],
+            ),
+            data: (r) {
+              final total = r.totalVisitors;
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: const EdgeInsets.fromLTRB(
+                  Spacing.page,
+                  4,
+                  Spacing.page,
+                  40,
+                ),
+                children: [
+                  Card1(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CardLabel(
+                                tr('Visitors by country'),
+                                icon: SolarIconsOutline.global,
+                              ),
+                            ),
+                            Text(
+                              '${r.countries.length} ${tr('countries')}',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: c.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LayoutBuilder(
+                          builder: (context, box) => Globe(
+                            countries: r.countries,
+                            accent: accent,
+                            size: box.maxWidth.clamp(200, 360),
+                          ),
+                        ),
+                        Text(
+                          'Drag to spin',
+                          style: TextStyle(fontSize: 11.5, color: c.textFaint),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 300.ms),
+                  const SizedBox(height: Spacing.gap),
+                  Card1(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                tr('Top countries'),
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                            ),
+                            Text(
+                              '${Fmt.compact(total)} ${tr('visitors')}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: c.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (r.countries.isEmpty)
+                          Text(
+                            tr('No GeoIP data in this window.'),
+                            style: TextStyle(color: c.textFaint),
+                          )
+                        else
+                          for (
+                            var i = 0;
+                            i < r.countries.length.clamp(0, 12);
+                            i++
+                          ) ...[
+                            _CountryRow(
+                              flag: r.countries[i].flag,
+                              name: r.countries[i].name,
+                              visitors: r.countries[i].visitors,
+                              share: total == 0
+                                  ? 0
+                                  : r.countries[i].visitors / total,
+                              fraction: r.countries.first.visitors == 0
+                                  ? 0
+                                  : r.countries[i].visitors /
+                                        r.countries.first.visitors,
+                              color: accent.withValues(
+                                alpha: (1 - i * 0.07).clamp(0.3, 1.0),
+                              ),
+                            ),
+                            if (i != r.countries.length.clamp(0, 12) - 1)
+                              const SizedBox(height: 14),
+                          ],
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 300.ms, delay: 80.ms),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -117,7 +206,14 @@ class WorldScreen extends ConsumerWidget {
 }
 
 class _CountryRow extends StatelessWidget {
-  const _CountryRow({required this.flag, required this.name, required this.visitors, required this.share, required this.fraction, required this.color});
+  const _CountryRow({
+    required this.flag,
+    required this.name,
+    required this.visitors,
+    required this.share,
+    required this.fraction,
+    required this.color,
+  });
   final String flag;
   final String name;
   final num visitors;
@@ -134,14 +230,36 @@ class _CountryRow extends StatelessWidget {
           children: [
             Text(flag, style: const TextStyle(fontSize: 18)),
             const SizedBox(width: 10),
-            Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500))),
-            Text(Fmt.compact(visitors), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: c.text, fontFeatures: const [FontFeature.tabularFigures()])),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              Fmt.compact(visitors),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: c.text,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
             SizedBox(
               width: 52,
               child: Text(
                 '${(share * 100).toStringAsFixed(share < 0.1 ? 1 : 0)}%',
                 textAlign: TextAlign.right,
-                style: TextStyle(fontSize: 12.5, color: c.textMuted, fontFeatures: const [FontFeature.tabularFigures()]),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: c.textMuted,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ],
@@ -151,7 +269,12 @@ class _CountryRow extends StatelessWidget {
           padding: const EdgeInsets.only(left: 28),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(value: fraction.clamp(0, 1), minHeight: 6, backgroundColor: c.surfaceRaised, color: color),
+            child: LinearProgressIndicator(
+              value: fraction.clamp(0, 1),
+              minHeight: 6,
+              backgroundColor: c.surfaceRaised,
+              color: color,
+            ),
           ),
         ),
       ],

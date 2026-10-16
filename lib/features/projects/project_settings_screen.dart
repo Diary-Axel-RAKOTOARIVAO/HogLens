@@ -12,8 +12,9 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/providers/providers.dart';
 import '../../home_widget/home_widget_service.dart';
+import '../../shared/accent_picker.dart';
+import '../../shared/logo_colors.dart';
 import '../../shared/ui.dart';
-import 'add_project_screen.dart';
 
 class ProjectSettingsScreen extends ConsumerStatefulWidget {
   const ProjectSettingsScreen({super.key, required this.projectId});
@@ -28,12 +29,20 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
   final _key = TextEditingController();
   File? _newLogo;
   bool _removeLogo = false;
-  int? _accent;
+  Color? _accent;
+  List<Color> _logoColors = const [];
   bool _busy = false;
+
+  Future<void> _loadLogoColors(String? path) async {
+    if (path == null) return;
+    final colors = await extractLogoColors(path);
+    if (mounted) setState(() => _logoColors = colors);
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadLogoColors(ref.read(projectProvider(widget.projectId))?.logoPath);
     _name = TextEditingController(text: ref.read(projectProvider(widget.projectId))?.name ?? '');
   }
 
@@ -115,7 +124,9 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
       setState(() {
         _newLogo = File(x.path);
         _removeLogo = false;
+        _logoColors = const [];
       });
+      _loadLogoColors(x.path);
     }
   }
 
@@ -124,7 +135,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
     if (p == null) return;
     setState(() => _busy = true);
     await ref.read(projectsProvider.notifier).update(
-          p.copyWith(name: _name.text.trim().isEmpty ? p.name : _name.text.trim(), accentIndex: _accent),
+          p.copyWith(name: _name.text.trim().isEmpty ? p.name : _name.text.trim(), accent: _accent),
           newLogo: _newLogo,
           removeLogo: _removeLogo,
           newKey: _key.text.trim().isEmpty ? null : _key.text.trim(),
@@ -161,7 +172,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
     if (p == null) return const Scaffold();
     final preview = p.copyWith(
       name: _name.text.isEmpty ? p.name : _name.text,
-      accentIndex: _accent ?? p.accentIndex,
+      accent: _accent ?? p.accent,
       clearLogo: _removeLogo,
     );
 
@@ -210,7 +221,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
           const SizedBox(height: 24),
           Text(tr('ACCENT'), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 10),
-          AccentPicker(value: _accent ?? p.accentIndex, onChanged: (i) => setState(() => _accent = i)),
+          AccentField(value: _accent ?? p.accent, logoColors: _logoColors, onChanged: (c) => setState(() => _accent = c)),
           const SizedBox(height: 24),
           Text(tr('CONNECTION'), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 8),

@@ -59,20 +59,62 @@ class Brand {
   static const Color ink = Color(0xFF505050);
 }
 
-/// Accent palette a project can pick from. Index is persisted, not the color.
+/// Accent colors. Projects store the color itself; [legacy] maps the old
+/// stored index to a color for migration.
 class Accents {
-  static const List<Color> all = [
-    Brand.orange, // logo orange
-    Color(0xFF1C7CF2), // blue
-    Color(0xFF16A34A), // green
-    Color(0xFF7C3AED), // violet
+  static const List<Color> presets = [
+    Brand.orange,
+    Color(0xFFEF4444), // red
     Color(0xFFDB2777), // pink
+    Color(0xFFC026D3), // fuchsia
+    Color(0xFF7C3AED), // violet
+    Color(0xFF4F46E5), // indigo
+    Color(0xFF1C7CF2), // blue
+    Color(0xFF0EA5E9), // sky
     Color(0xFF0D9488), // teal
+    Color(0xFF16A34A), // green
+    Color(0xFF65A30D), // lime
     Color(0xFFF59E0B), // amber
+    Color(0xFF92400E), // brown
+    Color(0xFF475569), // slate
+    Color(0xFF3F3F46), // graphite
     Color(0xFF111111), // ink
   ];
 
-  static Color at(int i) => all[i.clamp(0, all.length - 1)];
+  static const List<Color> legacy = [
+    Brand.orange,
+    Color(0xFF1C7CF2),
+    Color(0xFF16A34A),
+    Color(0xFF7C3AED),
+    Color(0xFFDB2777),
+    Color(0xFF0D9488),
+    Color(0xFFF59E0B),
+    Color(0xFF111111),
+  ];
+
+  static Color fromLegacyIndex(int i) => legacy[i.clamp(0, legacy.length - 1)];
+}
+
+extension AccentColorX on Color {
+  /// Text/icon color that reads on top of this color.
+  Color get onAccent => computeLuminance() > 0.45 ? const Color(0xFF111111) : Colors.white;
+
+  /// "#FF6600"
+  String get hex => '#${(toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  /// Contrast ratio against [other] (1 to 21).
+  double contrastWith(Color other) {
+    final a = computeLuminance(), b = other.computeLuminance();
+    final hi = a > b ? a : b, lo = a > b ? b : a;
+    return (hi + 0.05) / (lo + 0.05);
+  }
+}
+
+Color? parseHexColor(String input) {
+  var t = input.trim().replaceFirst('#', '');
+  if (t.length == 3) t = t.split('').map((c) => '$c$c').join();
+  if (t.length != 6 || int.tryParse(t, radix: 16) == null) return null;
+  return Color(0xFF000000 | int.parse(t, radix: 16));
 }
 
 class Radii {

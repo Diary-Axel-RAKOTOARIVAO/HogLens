@@ -15,7 +15,7 @@ Future<void> addDemoProject(BuildContext context, WidgetRef ref) async {
         host: PhProject.demoHost,
         projectId: 1,
         apiKey: 'demo',
-        accentIndex: 1,
+        accent: const Color(0xFF1C7CF2),
       );
   final w = ref.read(widgetsProvider.notifier);
   for (final id in ['signups', 'exceptions', 'countries', 'browsers', 'top_pages']) {

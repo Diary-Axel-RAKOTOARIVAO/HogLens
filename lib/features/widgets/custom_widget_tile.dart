@@ -126,7 +126,7 @@ class CustomWidgetTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final project = ref.watch(projectProvider(projectId));
-    final accent = project?.accent ?? Accents.all.first;
+    final accent = project?.accent ?? Brand.orange;
     final result = ref.watch(widgetResultProvider((projectId, spec.id)));
 
     return Card1(
@@ -139,7 +139,7 @@ class CustomWidgetTile extends ConsumerWidget {
           Row(
             children: [
               Expanded(child: CardLabel(spec.title, icon: _iconFor(spec.kind))),
-              if (result.value?.fromCache == true)
+              if (result.value?.offline == true)
                 Icon(SolarIconsOutline.cloudCross, size: 14, color: c.textFaint),
             ],
           ),

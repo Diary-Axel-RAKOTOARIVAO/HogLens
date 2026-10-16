@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoglens/core/theme/tokens.dart';
 import 'package:hoglens/data/api/stats_repository.dart';
 import 'package:hoglens/data/models/project.dart';
 import 'package:hoglens/data/models/stats.dart';
@@ -13,7 +15,7 @@ void main() {
       name: 'Madarent App',
       host: 'https://eu.posthog.com',
       projectId: 42,
-      accentIndex: 3,
+      accentArgb: 0xFF7C3AED,
       createdAt: DateTime(2026, 9, 28),
     );
     final back = PhProject.fromJson(p.toJson());
@@ -22,6 +24,25 @@ void main() {
     expect(back.hostKind, PhHost.eu);
     expect(back.initials, 'MA');
     expect(PhProject.fromJson({...p.toJson(), 'host': 'https://ph.example.com'}).hostLabel, 'ph.example.com');
+  });
+
+  test('old projects keep their accent after the move to stored colors', () {
+    final legacy = {'id': 'a', 'name': 'Old', 'host': 'https://us.posthog.com', 'projectId': 1, 'accentIndex': 1, 'createdAt': '2026-09-28T00:00:00.000'};
+    expect(PhProject.fromJson(legacy).accent, const Color(0xFF1C7CF2));
+    final ink = {...legacy, 'accentIndex': 7};
+    expect(PhProject.fromJson(ink).accent, const Color(0xFF111111));
+    final modern = PhProject.fromJson({...legacy, 'accent': 0xFF123456});
+    expect(modern.accent, const Color(0xFF123456));
+    expect(PhProject.fromJson(modern.toJson()).accentArgb, 0xFF123456);
+  });
+
+  test('hex parsing and contrast helpers', () {
+    expect(parseHexColor('#ff6600'), const Color(0xFFFF6600));
+    expect(parseHexColor('f60'), const Color(0xFFFF6600));
+    expect(parseHexColor('nope'), isNull);
+    expect(const Color(0xFFFF6600).hex, '#FF6600');
+    expect(const Color(0xFFFFEE88).onAccent, const Color(0xFF111111));
+    expect(const Color(0xFF1C7CF2).onAccent, Colors.white);
   });
 
   test('widget spec json round-trips', () {

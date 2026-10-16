@@ -400,9 +400,10 @@ class PillFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const fg = Colors.white;
+    final fill = color ?? Brand.orange;
+    final fg = fill.onAccent;
     return Material(
-      color: color ?? Brand.orange,
+      color: fill,
       shape: const StadiumBorder(),
       child: InkWell(
         customBorder: const StadiumBorder(),

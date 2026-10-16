@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,7 +33,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> with VisiblePolling {
   @override
-  Duration get pollInterval => const Duration(seconds: 60);
+  Duration get pollInterval => const Duration(seconds: 30);
 
   @override
   Future<void> poll() => _refresh();
@@ -152,7 +154,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with VisibleP
       floatingActionButton: PillFab(
         label: tr('Add widget'),
         icon: SolarIconsOutline.addCircle,
-        color: project.accentIndex == Accents.all.length - 1 ? null : project.accent,
+        color: context.accentFill(project.accent),
         onTap: () => showWidgetBuilder(context, projectId: project.id),
       ),
       body: RefreshIndicator(
@@ -224,8 +226,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with VisibleP
               padding: const EdgeInsets.fromLTRB(Spacing.page, 8, Spacing.page, 110),
               sliver: SliverList.list(
                 children: [
-                  _RangeBar(selection: selection, onRefresh: _refresh),
-                  if (stats.value?.fromCache == true) ...[
+                  _RangeBar(selection: selection, onRefresh: _refresh, stats: stats),
+                  if (stats.value?.offline == true) ...[
                     const SizedBox(height: 12),
                     _OfflineBadge(savedAt: stats.value!.fetchedAt),
                   ],
@@ -312,7 +314,7 @@ class _OfflineBadge extends StatelessWidget {
               Icon(SolarIconsOutline.cloudCross, size: 15, color: c.textMuted),
               const SizedBox(width: 7),
               Text(
-                '${tr('Offline · saved')} ${Fmt.relative(savedAt)}',
+                '${tr('Couldn\'t refresh · saved')} ${Fmt.relative(savedAt)}',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.textMuted),
               ),
             ],
@@ -350,8 +352,9 @@ class _MenuRow extends StatelessWidget {
 
 /// Shows only the active range; tapping opens the drawer of options.
 class _RangeBar extends ConsumerWidget {
-  const _RangeBar({required this.selection, required this.onRefresh});
+  const _RangeBar({required this.selection, required this.onRefresh, required this.stats});
   final RangeSelection selection;
+  final AsyncValue<KeyStats> stats;
   final Future<void> Function() onRefresh;
 
   @override
@@ -394,7 +397,61 @@ class _RangeBar extends ConsumerWidget {
         ),
         const SizedBox(width: 8),
         _RefreshButton(onRefresh: onRefresh),
+        const SizedBox(width: 10),
+        Flexible(child: _FreshnessLabel(stats: stats)),
       ],
+    );
+  }
+}
+
+/// "Updated 20s ago", or "Updating…" while a fetch runs or the screen is
+/// showing the saved copy. Re-renders every ten seconds.
+class _FreshnessLabel extends StatefulWidget {
+  const _FreshnessLabel({required this.stats});
+  final AsyncValue<KeyStats> stats;
+
+  @override
+  State<_FreshnessLabel> createState() => _FreshnessLabelState();
+}
+
+class _FreshnessLabelState extends State<_FreshnessLabel> {
+  late final Timer _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+    if (mounted) setState(() {});
+  });
+
+  @override
+  void initState() {
+    super.initState();
+    _timer;
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final s = widget.stats;
+    final v = s.value;
+    if (v == null) return const SizedBox.shrink();
+    final updating = s.isLoading || (v.fromCache && !v.offline);
+    final text = v.offline
+        ? tr('Couldn\'t refresh')
+        : updating
+            ? tr('Updating…')
+            : '${tr('Updated')} ${Fmt.ago(v.fetchedAt)}';
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: Text(
+        text,
+        key: ValueKey(text),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12.5, color: v.offline ? c.negative : c.textMuted, fontFeatures: const [FontFeature.tabularFigures()]),
+      ),
     );
   }
 }
@@ -632,10 +689,8 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    final ink = project.accentIndex == Accents.all.length - 1;
-    final bg = ink ? c.text : project.accent;
-    final fg = ink ? c.bg : Colors.white;
+    final bg = context.accentFill(project.accent);
+    final fg = bg.onAccent;
     final unique = mode == HeroMode.unique;
     final metric = unique ? stats.visitors : stats.views;
     final series = unique ? stats.visitorSeries : stats.viewSeries;

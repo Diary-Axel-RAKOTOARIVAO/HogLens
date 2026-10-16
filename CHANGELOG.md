@@ -5,6 +5,23 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-16
+
+### Added
+- New accent color picker: colors suggested from your uploaded logo, 16 presets, and a custom picker with a saturation/brightness pad, hue slider and hex field, all with a live preview. Uploading a logo when adding a project picks its main color automatically.
+- "Updated 20s ago" next to the refresh button, so you can see how fresh the dashboard is.
+- Reorder mode on the projects page with drag handles, plus a lift and haptic tap when you long-press a card to move it.
+
+### Changed
+- The dashboard refreshes every 30 seconds while open (was 60). Coming back to any screen refreshes it right away if its data is more than 15 seconds old.
+- Errors and Worldwide refresh every minute while open; every screen loads fresh data each time you open it, showing the saved copy until the new one arrives.
+- Accent colors are stored as real colors. Existing projects keep their color.
+
+### Fixed
+- Opening the app on a new day showed yesterday's numbers as "Today" until the network answered.
+- The "Offline" badge flashed on every launch while fresh data was loading.
+- When PostHog is briefly overloaded or rate-limiting, requests are retried instead of failing, and a refresh that really fails says "Couldn't refresh" rather than "Offline".
+
 ## [1.0.0] - 2026-10-01
 
 First stable release. Same app as 0.10.0, now considered ready for everyday use.

@@ -116,6 +116,8 @@ class StatRange {
   String get cacheKey => switch (kind) {
         RangeKind.custom => 'custom_${start.millisecondsSinceEpoch}_${end.year}${end.month}${end.day}',
         RangeKind.thisMonth => 'month_${start.year}${start.month}',
+        // Dated, so yesterday's numbers are never shown as today's.
+        RangeKind.today => 'today_${start.year}${start.month}${start.day}',
         _ => kind.name,
       };
 
@@ -185,6 +187,7 @@ class KeyStats {
     required this.topEvents,
     required this.fetchedAt,
     this.fromCache = false,
+    this.offline = false,
   });
 
   final StatRange range;
@@ -209,9 +212,12 @@ class KeyStats {
   /// fetch failed; [fetchedAt] is then the time it was saved.
   final bool fromCache;
 
+  /// The network fetch failed and this is the last saved copy.
+  final bool offline;
+
   num get totalTop => topEvents.fold<num>(0, (a, e) => a + e.count);
 
-  KeyStats asCached(DateTime savedAt) => KeyStats(
+  KeyStats asCached(DateTime savedAt, {bool offline = false}) => KeyStats(
         range: range,
         events: events,
         visitors: visitors,
@@ -225,6 +231,7 @@ class KeyStats {
         topEvents: topEvents,
         fetchedAt: savedAt,
         fromCache: true,
+        offline: offline,
       );
 
   Map<String, dynamic> toJson() => {
@@ -265,10 +272,11 @@ class KeyStats {
 
 @immutable
 class QueryResult {
-  const QueryResult({required this.columns, required this.rows, this.fromCache = false, this.savedAt, this.previous});
+  const QueryResult({required this.columns, required this.rows, this.fromCache = false, this.offline = false, this.savedAt, this.previous});
   final List<String> columns;
   final List<List<dynamic>> rows;
   final bool fromCache;
+  final bool offline;
   final DateTime? savedAt;
 
   /// First cell of the same query over the previous window, when compared.
@@ -282,8 +290,8 @@ class QueryResult {
     return Metric(current: cur, previous: previous!).delta;
   }
 
-  QueryResult asCached(DateTime at) =>
-      QueryResult(columns: columns, rows: rows, fromCache: true, savedAt: at, previous: previous);
+  QueryResult asCached(DateTime at, {bool offline = false}) =>
+      QueryResult(columns: columns, rows: rows, fromCache: true, offline: offline, savedAt: at, previous: previous);
   QueryResult withPrevious(num? p) => QueryResult(columns: columns, rows: rows, fromCache: fromCache, savedAt: savedAt, previous: p);
   Map<String, dynamic> toJson() => {'columns': columns, 'rows': rows, 'previous': previous};
   factory QueryResult.fromJson(Map<String, dynamic> j) => QueryResult(

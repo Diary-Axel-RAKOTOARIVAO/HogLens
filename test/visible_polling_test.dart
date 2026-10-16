@@ -35,8 +35,9 @@ void main() {
 
     nav.currentState!.pop();
     await tester.pumpAndSettle();
+    expect(polls, covered + 1, reason: 'back on top with stale data: refresh right away');
     await tester.pump(const Duration(seconds: 11));
-    expect(polls, greaterThan(covered), reason: 'back on top: polling resumes');
+    expect(polls, covered + 2, reason: 'and keep polling');
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     final paused = polls;
@@ -46,6 +47,19 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
     expect(polls, paused + 1, reason: 'resume with stale data: refresh immediately');
+  });
+
+  testWidgets('a quick round trip does not refetch', (tester) async {
+    var polls = 0;
+    final nav = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(MaterialApp(navigatorKey: nav, home: _Poller(onPoll: () => polls++)));
+    await tester.pump(const Duration(seconds: 10));
+    final before = polls;
+    nav.currentState!.push(MaterialPageRoute<void>(builder: (_) => const Scaffold()));
+    await tester.pumpAndSettle();
+    nav.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(polls, before, reason: 'data is younger than the stale threshold');
   });
 
   testWidgets('stops for good once the screen is disposed', (tester) async {

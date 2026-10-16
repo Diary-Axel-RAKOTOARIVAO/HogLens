@@ -7,6 +7,13 @@ extension AppColorsX on BuildContext {
   AppColors get colors => Theme.of(this).brightness == Brightness.dark
       ? AppColors.dark
       : AppColors.light;
+
+  /// [accent] as a filled surface (hero card, primary pill). A near-black
+  /// accent would disappear on the dark theme, so it flips to the text color.
+  Color accentFill(Color accent) {
+    final dark = Theme.of(this).brightness == Brightness.dark;
+    return dark && accent.contrastWith(colors.bg) < 1.6 ? colors.text : accent;
+  }
 }
 
 class AppTheme {

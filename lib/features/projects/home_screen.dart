@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -24,6 +24,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> with VisiblePolling {
+  bool _reordering = false;
+
   @override
   Duration get pollInterval => const Duration(seconds: 60);
 
@@ -116,33 +118,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with VisiblePolling {
               padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 40),
               sliver: SliverReorderableList(
                 itemCount: projects.length,
+                onReorderStart: (_) => HapticFeedback.mediumImpact(),
+                onReorderEnd: (_) => HapticFeedback.selectionClick(),
                 onReorderItem: (a, b) => ref.read(projectsProvider.notifier).reorder(a, b),
-                proxyDecorator: (child, _, _) => Material(color: Colors.transparent, child: child),
+                proxyDecorator: (child, _, animation) => AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final t = Curves.easeOut.transform(animation.value);
+                    return Transform.scale(
+                      scale: 1 + 0.03 * t,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(Radii.card),
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18 * t), blurRadius: 24 * t, offset: Offset(0, 10 * t))],
+                        ),
+                        child: Material(color: Colors.transparent, child: child),
+                      ),
+                    );
+                  },
+                  child: child,
+                ),
                 itemBuilder: (context, i) {
                   final p = projects[i];
+                  final card = _ProjectCard(project: p, reordering: _reordering, index: i);
                   return Padding(
                     key: ValueKey(p.id),
                     padding: const EdgeInsets.only(bottom: Spacing.gap),
-                    child: ReorderableDelayedDragStartListener(
-                      index: i,
-                      child: _ProjectCard(project: p)
-                          .animate()
-                          .fadeIn(duration: 250.ms, delay: (40 * i).ms)
-                          .slideY(begin: 0.05, end: 0, curve: Curves.easeOut),
-                    ),
+                    // Long-press anywhere drags; in reorder mode the handle drags at once.
+                    child: _reordering ? card : ReorderableDelayedDragStartListener(index: i, child: card),
                   );
                 },
               ),
             ),
           ],
-          if (projects.isNotEmpty)
+          if (projects.length > 1)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 32),
-                child: Text(
-                  tr('Hold and drag to reorder'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: c.textFaint, fontSize: 12),
+                child: Column(
+                  children: [
+                    if (!_reordering)
+                      Text(
+                        tr('Hold a card to move it'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: c.textFaint, fontSize: 12),
+                      ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Material(
+                        color: _reordering ? c.text : c.surface,
+                        shape: const StadiumBorder(),
+                        child: InkWell(
+                          customBorder: const StadiumBorder(),
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _reordering = !_reordering);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(_reordering ? Icons.check_rounded : Icons.swap_vert_rounded, size: 17, color: _reordering ? c.bg : c.text),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _reordering ? tr('Done') : tr('Reorder'),
+                                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: _reordering ? c.bg : c.text),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -237,8 +286,10 @@ class _Overview extends ConsumerWidget {
 }
 
 class _ProjectCard extends ConsumerWidget {
-  const _ProjectCard({required this.project});
+  const _ProjectCard({required this.project, this.reordering = false, this.index = 0});
   final PhProject project;
+  final bool reordering;
+  final int index;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -246,10 +297,28 @@ class _ProjectCard extends ConsumerWidget {
     final glance = ref.watch(glanceProvider(project.id));
 
     return Card1(
-      onTap: () => context.push('/p/${project.id}'),
+      onTap: reordering ? null : () => context.push('/p/${project.id}'),
       padding: const EdgeInsets.all(18),
       child: Row(
         children: [
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            child: reordering
+                ? ReorderableDragStartListener(
+                    index: index,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Container(
+                        width: 36,
+                        height: 56,
+                        decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.drag_indicator_rounded, color: c.textMuted),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
           ProjectAvatar(project: project, size: 56),
           const SizedBox(width: 16),
           Expanded(
