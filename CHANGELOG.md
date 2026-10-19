@@ -5,6 +5,14 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-10-19
+
+### Changed
+- HogLens now has a public download page at github.com/Diary-Axel-RAKOTOARIVAO/hoglens-releases. It always has the newest APKs, the release notes, and Issues for reporting problems.
+
+### Fixed
+- "Check for updates" never found new versions, and the GitHub links in Settings led to a page you couldn't open. Both now use the public download page.
+
 ## [1.2.2] - 2026-10-19
 
 ### Added
