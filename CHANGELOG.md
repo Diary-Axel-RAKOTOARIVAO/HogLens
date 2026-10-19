@@ -5,6 +5,19 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-19
+
+### Added
+- Traffic sources on the dashboard, in place of Top events: a channel bar (paid social, social, direct, referral, search, AI, email…) and the top sources with their logos, such as Facebook, Instagram, Google, ChatGPT, Gemini, WhatsApp and TikTok, showing sessions, share and how much of it is paid. Tap a source for its trend, UTM campaigns with their medium, and landing pages. Built from PostHog's sessions table, so UTM tags and referrers are both counted.
+
+### Changed
+- New Eyepiece Glint brand: launcher icons (including Android themed icons), splash screens and the logo inside the app.
+- Top events moved to the Behavior screen, still with tap-to-drill-down. The dashboard makes one query fewer per refresh.
+
+### Fixed
+- The app could crash shortly after opening on some Android devices: home-screen widget images were rendered with Flutter in the background, which failed on some graphics drivers. Widgets now draw their charts natively, and nothing is rendered or fetched for widgets when none is on the home screen.
+- Home-screen widget charts used the default orange instead of the project's accent color.
+
 ## [1.1.0] - 2026-10-16
 
 ### Added
