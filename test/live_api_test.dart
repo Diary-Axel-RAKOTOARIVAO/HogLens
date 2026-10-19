@@ -12,6 +12,7 @@ import 'package:hoglens/data/api/behavior_repository.dart';
 import 'package:hoglens/data/models/insights.dart';
 import 'package:hoglens/data/api/insights_repository.dart';
 import 'package:hoglens/data/api/posthog_client.dart';
+import 'package:hoglens/data/api/sources_repository.dart';
 import 'package:hoglens/data/api/stats_repository.dart';
 import 'package:hoglens/data/models/stats.dart';
 import 'package:hoglens/features/widgets/widget_presets.dart';
@@ -54,8 +55,7 @@ void main() {
           print('stats ${r.label} → events ${s.events.current} (prev ${s.events.previous}), '
               'visitors ${s.visitors.current}, views ${s.views.current}, '
               'sessions ${s.sessions.current}, live ${s.activeNow}, '
-              'series ${s.eventSeries.length}/${r.bucketCount} pts, hourly ${s.hourlySeries.length}, '
-              'top ${s.topEvents.take(3).map((e) => '${e.name}=${e.count}').join(' ')}');
+              'series ${s.eventSeries.length}/${r.bucketCount} pts, hourly ${s.hourlySeries.length}, ');
           expect(s.eventSeries.length, r.bucketCount);
           expect(s.hourlySeries.length, 24);
         }, timeout: slow);
@@ -99,6 +99,25 @@ void main() {
         final geo = await repo.countries(r);
         print('geo → ${geo.countries.length} countries, top ${geo.countries.take(3).map((c) => '${c.flag} ${c.name} ${c.visitors}').join(', ')}');
         expect(geo.countries, isNotEmpty);
+      }, timeout: slow);
+
+      test('traffic sources, source detail, top events', () async {
+        final r = RangeSelection.week.resolve(DateTime.now());
+        final repo = SourcesRepository(client, id);
+        final report = await repo.sources(r);
+        print('sources → ${report.sources.length} sources, ${report.total} sessions; '
+            'channels ${report.channels.take(4).map((c) => '${c.$1}=${c.$2}').join(' ')}; '
+            'top ${report.sources.take(6).map((s) => '${s.name}=${s.sessions}${s.paid > 0 ? '(paid ${(s.paidShare * 100).round()}%)' : ''}').join(', ')}');
+        expect(report.sources, isNotEmpty);
+        expect(report.sources.fold<num>(0, (a, s) => a + s.sessions), report.total);
+        final detail = await repo.detail(report.sources.first, r);
+        print('detail(${report.sources.first.name}) → campaigns ${detail.campaigns.length} '
+            '(${detail.campaigns.take(2).map((c) => '${c.campaign}/${c.medium}=${c.sessions}').join(', ')}), '
+            'landing ${detail.landingPages.take(3)}, series ${detail.series.length}');
+        expect(detail.series.length, r.bucketCount);
+        final top = await StatsRepository(client, id).topEvents(r);
+        print('top events → ${top.take(3).map((e) => '${e.name}=${e.count}').join(', ')}');
+        expect(top, isNotEmpty);
       }, timeout: slow);
 
       test('flags', () async {

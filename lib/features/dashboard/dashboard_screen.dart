@@ -18,7 +18,7 @@ import '../../shared/visible_polling.dart';
 import '../widgets/custom_widget_tile.dart';
 import '../widgets/widget_builder_sheet.dart';
 import 'charts.dart';
-import 'event_drill_sheet.dart';
+import '../sources/traffic_sources_card.dart';
 import 'range_sheet.dart';
 
 enum HeroMode { unique, all }
@@ -43,6 +43,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with VisibleP
 
   Future<void> _refresh() async {
     ref.invalidate(keyStatsProvider(widget.projectId));
+    ref.invalidate(sourcesProvider(widget.projectId));
     for (final w in ref.read(projectWidgetsProvider(widget.projectId))) {
       ref.invalidate(widgetResultProvider((widget.projectId, w.id)));
     }
@@ -92,7 +93,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with VisibleP
               const SizedBox(height: 8),
               _MenuRow(
                 icon: SolarIconsOutline.usersGroupRounded,
-                label: tr('Behavior · lifecycle, retention, paths'),
+                label: tr('Behavior · events, lifecycle, retention, paths'),
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/p/${project.id}/behavior');
@@ -646,33 +647,7 @@ class _KeyStats extends StatelessWidget {
           ],
         ).animate().fadeIn(duration: 300.ms, delay: 120.ms),
         const SizedBox(height: Spacing.gap),
-        Card1(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CardLabel(rangeLabel, icon: SolarIconsOutline.calendar),
-              const SizedBox(height: 14),
-              Text(tr('Top events'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 28)),
-              const SizedBox(height: 6),
-              Text(
-                stats.topEvents.isEmpty
-                    ? tr('No events were captured in this range.')
-                    : '${stats.topEvents.length} ${tr('event types')}, ${Fmt.compact(stats.events.current)} ${tr('events in total')}. '
-                        '${stats.topEvents.first.name} ${tr('leads with')} '
-                        '${stats.totalTop == 0 ? '' : '${(stats.topEvents.first.count / stats.totalTop * 100).round()}% ${tr('of the top')} ${stats.topEvents.length}'}.',
-                style: TextStyle(color: c.textMuted, fontSize: 15, height: 1.4),
-              ),
-              if (stats.topEvents.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                RankedBars(
-                  rows: stats.topEvents.map((e) => (e.name, e.count)).toList(),
-                  color: project.accent,
-                  onTap: (name) => showEventDrill(context, projectId: project.id, event: name),
-                ),
-              ],
-            ],
-          ),
-        ).animate().fadeIn(duration: 300.ms, delay: 180.ms),
+        TrafficSourcesCard(project: project, rangeLabel: rangeLabel).animate().fadeIn(duration: 300.ms, delay: 180.ms),
       ],
     );
   }

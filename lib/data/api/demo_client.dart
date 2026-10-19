@@ -38,6 +38,24 @@ class DemoClient implements PhApi {
       }
       return QueryResult(columns: const ['bucket', 'count'], rows: rows);
     }
+    if (name == 'hoglens_sources') {
+      return const QueryResult(columns: ['src', 'ref', 'ch', 'sessions'], rows: [
+        ['fb', 'm.facebook.com', 'Paid Social', 2065], ['', r'$direct', 'Direct', 701], ['', 'example.com', 'Referral', 410],
+        ['', 'm.facebook.com', 'Organic Social', 667], ['fb', 'facebook.com', 'Paid Social', 322], ['', 'www.google.com', 'Organic Search', 245],
+        ['ig', 'instagram.com', 'Paid Social', 136], ['', 'instagram.com', 'Organic Social', 58], ['chatgpt.com', r'$direct', 'AI', 94],
+        ['', 'l.facebook.com', 'Organic Social', 55], ['', 'www.bing.com', 'Organic Search', 21], ['gemini', r'$direct', 'AI', 12],
+        ['', 'duckduckgo.com', 'Organic Search', 9], ['', 'wa.me', 'Organic Social', 31], ['', 'www.tiktok.com', 'Organic Social', 18],
+        ['newsletter', 'mail.google.com', 'Email', 26],
+      ]);
+    }
+    if (name == 'hoglens_source_campaigns') {
+      return const QueryResult(columns: ['c', 'm', 'n'], rows: [
+        ['autumn_rentals', 'paid', 922], ['antananarivo_flats', 'paid', 534], ['retargeting_7d', 'paid', 461], ['', 'social', 205],
+      ]);
+    }
+    if (name == 'hoglens_source_landing') {
+      return const QueryResult(columns: ['p', 'n'], rows: [['/', 1210], ['/recherche', 880], ['/listing/1182', 312], ['/pricing', 140]]);
+    }
     if (name == 'hoglens_geo') {
       return const QueryResult(columns: ['cc', 'name', 'visitors', 'events'], rows: [
         ['MG', 'Madagascar', 4749, 86132], ['FR', 'France', 610, 4120], ['US', 'United States', 142, 354],

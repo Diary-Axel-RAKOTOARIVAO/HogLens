@@ -36,14 +36,7 @@ ORDER BY bucket
 LIMIT 2000
 ''';
 
-    final topQ = '''
-SELECT event, count() AS c
-FROM events
-WHERE $cur
-GROUP BY event
-ORDER BY c DESC
-LIMIT 8
-''';
+
 
     const hourlyQ = '''
 SELECT toStartOfHour(timestamp) AS bucket, count()
@@ -56,7 +49,6 @@ ORDER BY bucket
     final results = await Future.wait([
       _client.query(_projectId, summaryQ, name: 'hoglens_summary'),
       _client.query(_projectId, seriesQ, name: 'hoglens_series'),
-      _client.query(_projectId, topQ, name: 'hoglens_top'),
       _client.query(_projectId, hourlyQ, name: 'hoglens_hourly'),
     ]);
 
@@ -75,7 +67,7 @@ ORDER BY bucket
     }
 
     final hourly = <SeriesPoint>[];
-    for (final r in results[3].rows) {
+    for (final r in results[2].rows) {
       final t = DateTime.tryParse('${r[0]}')?.toLocal();
       if (t != null) hourly.add(SeriesPoint(t, n(r[1])));
     }
@@ -93,9 +85,19 @@ ORDER BY bucket
       visitorSeries: fill(visitorSeries, range),
       viewSeries: fill(viewSeries, range),
       hourlySeries: fill(hourly, last24),
-      topEvents: results[2].rows.map((r) => TopEvent('${r[0]}', n(r[1]))).toList(),
       fetchedAt: now,
     );
+  }
+
+  /// The most frequent events in the window.
+  Future<List<TopEvent>> topEvents(StatRange range) async {
+    final r = await _client.query(
+      _projectId,
+      'SELECT event, count() AS c FROM events WHERE ${range.whereCurrent} GROUP BY event ORDER BY c DESC LIMIT 10',
+      name: 'hoglens_top',
+    );
+    num n(dynamic v) => v is num ? v : num.tryParse('$v') ?? 0;
+    return r.rows.map((row) => TopEvent('${row[0]}', n(row[1]))).toList();
   }
 
   /// Unique visitors per local day for the last 7 days plus the deduplicated

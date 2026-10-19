@@ -184,7 +184,6 @@ class KeyStats {
     required this.visitorSeries,
     required this.viewSeries,
     required this.hourlySeries,
-    required this.topEvents,
     required this.fetchedAt,
     this.fromCache = false,
     this.offline = false,
@@ -206,7 +205,6 @@ class KeyStats {
 
   /// Events per hour over the last 24 hours, independent of the range.
   final List<SeriesPoint> hourlySeries;
-  final List<TopEvent> topEvents;
 
   /// True when this is the last saved result shown because the network
   /// fetch failed; [fetchedAt] is then the time it was saved.
@@ -215,7 +213,6 @@ class KeyStats {
   /// The network fetch failed and this is the last saved copy.
   final bool offline;
 
-  num get totalTop => topEvents.fold<num>(0, (a, e) => a + e.count);
 
   KeyStats asCached(DateTime savedAt, {bool offline = false}) => KeyStats(
         range: range,
@@ -228,7 +225,6 @@ class KeyStats {
         visitorSeries: visitorSeries,
         viewSeries: viewSeries,
         hourlySeries: hourlySeries,
-        topEvents: topEvents,
         fetchedAt: savedAt,
         fromCache: true,
         offline: offline,
@@ -245,7 +241,6 @@ class KeyStats {
         'visitorSeries': visitorSeries.map((p) => p.toJson()).toList(),
         'viewSeries': viewSeries.map((p) => p.toJson()).toList(),
         'hourlySeries': hourlySeries.map((p) => p.toJson()).toList(),
-        'topEvents': topEvents.map((e) => e.toJson()).toList(),
         'fetchedAt': fetchedAt.toIso8601String(),
       };
 
@@ -263,7 +258,6 @@ class KeyStats {
       visitorSeries: series('visitorSeries'),
       viewSeries: series('viewSeries'),
       hourlySeries: series('hourlySeries'),
-      topEvents: (j['topEvents'] as List).map((e) => TopEvent.fromJson(e as List<dynamic>)).toList(),
       fetchedAt: DateTime.parse(j['fetchedAt'] as String),
     );
   }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoglens/core/theme/tokens.dart';
+import 'package:hoglens/features/sources/source_brand.dart';
 import 'package:hoglens/data/api/stats_repository.dart';
 import 'package:hoglens/data/models/project.dart';
 import 'package:hoglens/data/models/stats.dart';
@@ -94,19 +95,45 @@ void main() {
       visitorSeries: const [],
       viewSeries: const [],
       hourlySeries: const [],
-      topEvents: const [TopEvent('\$pageview', 6)],
       fetchedAt: now,
     );
     final back = KeyStats.fromJson(jsonDecode(jsonEncode(stats.toJson())) as Map<String, dynamic>).asCached(now);
     expect(back.events.current, 10);
     expect(back.range.start, r.start);
     expect(back.eventSeries.length, 2);
-    expect(back.topEvents.first.name, '\$pageview');
     expect(back.fromCache, isTrue);
     final q = QueryResult(columns: const ['a', 'b'], rows: [['x', 1], [null, 2.5]]);
     final qb = QueryResult.fromJson(jsonDecode(jsonEncode(q.toJson())) as Map<String, dynamic>);
     expect(qb.rows[1][1], 2.5);
     expect(qb.firstCell, 'x');
+  });
+
+  test('traffic sources are recognised from UTM tags and referrers', () {
+    expect(classifySource('fb', 'm.facebook.com').$1, 'facebook');
+    expect(classifySource('', 'lm.facebook.com').$1, 'facebook');
+    expect(classifySource('ig', r'$direct').$1, 'instagram');
+    expect(classifySource('', 'instagram.com').$1, 'instagram');
+    expect(classifySource('chatgpt.com', r'$direct').$1, 'chatgpt');
+    expect(classifySource('gemini', '').$1, 'gemini');
+    expect(classifySource('', 'www.google.com').$1, 'google');
+    expect(classifySource('', 'www.google.co.uk').$1, 'google');
+    expect(classifySource('', 'com.google.android.googlequicksearchbox').$1, 'google');
+    expect(classifySource('', 'www.bing.com').$1, 'bing');
+    expect(classifySource('', 'duckduckgo.com').$1, 'duckduckgo');
+    expect(classifySource('', 'wa.me').$1, 'whatsapp');
+    expect(classifySource('', 't.co').$1, 'x');
+    expect(classifySource('', r'$direct').$1, 'direct');
+    expect(classifySource('', '').$1, 'direct');
+    expect(classifySource('newsletter_oct', 'mail.google.com').$1, 'gmail');
+    expect(classifySource('newsletter_oct', 'example.org'), ('utm:newsletter_oct', 'newsletter_oct'));
+    expect(classifySource('', 'www.madarent.mg'), ('ref:madarent.mg', 'madarent.mg'));
+    // A Google domain that is not search must not be counted as Google search.
+    expect(classifySource('', 'docs.google.com').$1, isNot('google'));
+    expect(classifySource('', 'chatgpt.com').$1, 'chatgpt', reason: 'contains "t.co"');
+    expect(classifySource('', 'box.com').$1, isNot('x'), reason: 'ends with "x.com" but is not X');
+    expect(classifySource('', 'fr.pinterest.com').$1, 'pinterest');
+    expect(classifySource('', 'pinterest.fr').$1, 'pinterest');
+    expect(classifySource('', 'search.yahoo.co.jp').$1, 'yahoo');
   });
 
   test('metric delta', () {

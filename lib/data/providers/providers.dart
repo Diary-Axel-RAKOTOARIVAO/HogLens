@@ -14,6 +14,7 @@ import '../api/behavior_repository.dart';
 import '../api/demo_client.dart';
 import '../api/insights_repository.dart';
 import '../api/posthog_client.dart';
+import '../api/sources_repository.dart';
 import '../api/stats_repository.dart';
 import '../models/insights.dart';
 import '../models/project.dart';
@@ -570,3 +571,70 @@ class GeoNotifier extends AsyncNotifier<GeoReport> {
 }
 
 final geoProvider = AsyncNotifierProvider.autoDispose.family<GeoNotifier, GeoReport, String>(GeoNotifier.new);
+
+// ---- traffic sources & top events ---------------------------------------
+
+class SourcesNotifier extends AsyncNotifier<SourcesReport> {
+  SourcesNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<SourcesReport> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    final range = currentRange(ref);
+    return _cached<SourcesReport>(
+      emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
+      cache: ref.read(cacheProvider),
+      key: 'sources_${projectId}_${range.cacheKey}',
+      decode: (d, _) => SourcesReport.fromJson(d),
+      encode: (v) => v.toJson(),
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return SourcesRepository(client, project.projectId).sources(range);
+      },
+    );
+  }
+}
+
+final sourcesProvider = AsyncNotifierProvider.autoDispose.family<SourcesNotifier, SourcesReport, String>(SourcesNotifier.new);
+
+typedef SourceKey = (String projectId, String sourceKey);
+
+final sourceDetailProvider = FutureProvider.autoDispose.family<SourceDetail, SourceKey>((ref, key) async {
+  final (projectId, sourceKey) = key;
+  final project = ref.watch(projectProvider(projectId));
+  if (project == null) throw PosthogException('Project removed.');
+  final report = await ref.watch(sourcesProvider(projectId).future);
+  final source = report.sources.where((s) => s.key == sourceKey).firstOrNull;
+  if (source == null) throw PosthogException('No sessions from this source in this window.');
+  final client = await ref.watch(clientProvider(projectId).future);
+  return SourcesRepository(client, project.projectId).detail(source, currentRange(ref));
+});
+
+class TopEventsNotifier extends AsyncNotifier<List<TopEvent>> {
+  TopEventsNotifier(this.projectId);
+  final String projectId;
+
+  @override
+  Future<List<TopEvent>> build() async {
+    final project = ref.watch(projectProvider(projectId));
+    if (project == null) throw PosthogException('Project removed.');
+    final range = currentRange(ref);
+    return _cached<List<TopEvent>>(
+      emit: (v) => state = AsyncData(v),
+      loaded: _isLoaded(() => state),
+      cache: ref.read(cacheProvider),
+      key: 'top_${projectId}_${range.cacheKey}',
+      decode: (d, _) => (d['v'] as List).map((e) => TopEvent.fromJson(e as List<dynamic>)).toList(),
+      encode: (v) => {'v': v.map((e) => e.toJson()).toList()},
+      fetch: () async {
+        final client = await ref.watch(clientProvider(projectId).future);
+        return StatsRepository(client, project.projectId).topEvents(range);
+      },
+    );
+  }
+}
+
+final topEventsProvider = AsyncNotifierProvider.autoDispose.family<TopEventsNotifier, List<TopEvent>, String>(TopEventsNotifier.new);

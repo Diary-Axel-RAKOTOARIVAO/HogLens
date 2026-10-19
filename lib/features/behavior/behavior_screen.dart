@@ -12,6 +12,8 @@ import '../../core/util/format.dart';
 import '../../data/models/insights.dart';
 import '../../data/providers/providers.dart';
 import '../../shared/ui.dart';
+import '../dashboard/charts.dart';
+import '../dashboard/event_drill_sheet.dart';
 import 'sankey.dart';
 
 /// Lifecycle, weekly retention and navigation paths, all from PostHog's
@@ -25,12 +27,14 @@ class BehaviorScreen extends ConsumerWidget {
     final c = context.colors;
     final project = ref.watch(projectProvider(projectId));
     final accent = project?.accent ?? c.text;
+    final topEvents = ref.watch(topEventsProvider(projectId));
     final lifecycle = ref.watch(lifecycleProvider(projectId));
     final retention = ref.watch(retentionProvider(projectId));
     final paths = ref.watch(pathsProvider(projectId));
     final range = ref.watch(rangeProvider).resolve(DateTime.now());
 
     Future<void> refresh() async {
+      ref.invalidate(topEventsProvider(projectId));
       ref.invalidate(lifecycleProvider(projectId));
       ref.invalidate(retentionProvider(projectId));
       ref.invalidate(pathsProvider(projectId));
@@ -67,6 +71,30 @@ class BehaviorScreen extends ConsumerWidget {
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           padding: const EdgeInsets.fromLTRB(Spacing.page, 4, Spacing.page, 40),
           children: [
+            Card1(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CardLabel(tr('Top events'), icon: SolarIconsOutline.bolt),
+                  const SizedBox(height: 4),
+                  Text(tr('What people do most. Tap an event for its trend and pages.'), style: TextStyle(fontSize: 12.5, color: c.textMuted)),
+                  const SizedBox(height: 16),
+                  topEvents.when(
+                    skipLoadingOnRefresh: true,
+                    loading: () => const Skeleton(height: 220, radius: 12),
+                    error: (e, _) => ErrorCard(message: '$e', onRetry: refresh),
+                    data: (events) => events.isEmpty
+                        ? Text(tr('No events were captured in this range.'), style: TextStyle(color: c.textFaint))
+                        : RankedBars(
+                            rows: events.map((e) => (e.name, e.count)).toList(),
+                            color: accent,
+                            onTap: (name) => showEventDrill(context, projectId: projectId, event: name),
+                          ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 300.ms),
+            const SizedBox(height: Spacing.gap),
             Card1(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
