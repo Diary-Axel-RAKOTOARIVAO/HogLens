@@ -5,6 +5,22 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-10-19
+
+### Added
+- Screenshots of every main screen, in light and dark, under `screenshots/` for the landing page and README.
+
+### Fixed
+- The Events tile on the dashboard overflowed by a couple of pixels on narrower phones. Its chart now shrinks to fit.
+- The project menu (Live feed, Behavior, Worldwide…) was cut off at the bottom on shorter screens. It now grows to fit and scrolls if needed.
+- Country labels on the globe no longer pile on top of each other when countries are close together, such as France and Germany or Madagascar and Mauritius. The busiest country keeps its flag and count, and its neighbours show just their dot.
+- Retention cohort sizes like "2.04K" no longer touch the edges of their cells.
+- In project settings, the host and project ID are right-aligned instead of starting mid-row.
+- The color pad's handle was cut off in the corners for very bright or saturated colors, such as the default orange. It now stays fully visible.
+
+### Changed
+- The demo projects look like a real account: each one has its own traffic level, and YouTube replaces the placeholder referrer in traffic sources.
+
 ## [1.2.1] - 2026-10-19
 
 ### Fixed
