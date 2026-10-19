@@ -59,8 +59,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with VisibleP
     final c = context.colors;
     showModalBottomSheet<void>(
       context: context,
+      // Six rows outgrow the default 9/16 height cap on shorter phones.
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -557,8 +559,22 @@ class _KeyStats extends StatelessWidget {
                     AnimatedBigValue(stats.events.current, format: Fmt.compact, size: 26),
                     const SizedBox(height: 2),
                     _DeltaLine(stats.events.delta, suffix: range.kind == RangeKind.today ? tr('vs yesterday') : tr('vs previous')),
-                    const Spacer(),
-                    MiniBars(values: stats.eventSeries.map((p) => p.v).toList(), color: project.accent, height: 40, gap: 3),
+                    const SizedBox(height: 8),
+                    // Bars take whatever height is left (up to 40) so the
+                    // square tile never overflows on narrow phones.
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, box) => Align(
+                          alignment: Alignment.bottomCenter,
+                          child: MiniBars(
+                            values: stats.eventSeries.map((p) => p.v).toList(),
+                            color: project.accent,
+                            height: box.maxHeight.clamp(12.0, 40.0),
+                            gap: 3,
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Text(range.hourly ? tr('Per hour') : tr('Per day'), style: TextStyle(color: c.textMuted, fontSize: 11.5)),
                   ],
