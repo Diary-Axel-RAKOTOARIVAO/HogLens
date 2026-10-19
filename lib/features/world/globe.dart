@@ -188,14 +188,20 @@ class _GlobePainter extends CustomPainter {
       canvas.drawCircle(p, glow, Paint()..color = accent.withValues(alpha: 0.18 * vis));
       canvas.drawCircle(p, 4, Paint()..color = accent.withValues(alpha: vis));
       canvas.drawCircle(p, 4, Paint()..color = bubbleText.withValues(alpha: 0.9 * vis)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+    }
 
-      // Flag above, count bubble below.
+    // Flag above, count bubble below. Busiest countries claim space first and
+    // neighbours whose labels would overlap keep only their dot, so clusters
+    // like France/Germany or Madagascar/Mauritius stay readable.
+    final placed = <Rect>[];
+    final byTraffic = [...markers]..sort((a, b) => b.$3.visitors.compareTo(a.$3.visitors));
+    for (final (z, p, c) in byTraffic) {
+      if (z <= 0.15) continue;
+      final vis = ((z + 0.1) / 1.1).clamp(0.15, 1.0);
       final flag = TextPainter(
         text: TextSpan(text: c.flag, style: const TextStyle(fontSize: 16)),
         textDirection: TextDirection.ltr,
       )..layout();
-      flag.paint(canvas, p - Offset(flag.width / 2, flag.height + 8));
-
       final label = TextPainter(
         text: TextSpan(
           text: Fmt.compact(c.visitors),
@@ -203,12 +209,15 @@ class _GlobePainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromCenter(center: p + const Offset(0, 16), width: label.width + 14, height: label.height + 6),
-        const Radius.circular(9),
-      );
-      canvas.drawRRect(rect, Paint()..color = accent.withValues(alpha: vis));
-      label.paint(canvas, Offset(rect.center.dx - label.width / 2, rect.center.dy - label.height / 2));
+      final bubble = Rect.fromCenter(center: p + const Offset(0, 16), width: label.width + 14, height: label.height + 6);
+      final flagRect = Rect.fromLTWH(p.dx - flag.width / 2, p.dy - flag.height - 8, flag.width, flag.height);
+      final footprint = flagRect.expandToInclude(bubble).inflate(2);
+      if (placed.any((r) => r.overlaps(footprint))) continue;
+      placed.add(footprint);
+
+      flag.paint(canvas, flagRect.topLeft);
+      canvas.drawRRect(RRect.fromRectAndRadius(bubble, const Radius.circular(9)), Paint()..color = accent.withValues(alpha: vis));
+      label.paint(canvas, Offset(bubble.center.dx - label.width / 2, bubble.center.dy - label.height / 2));
     }
   }
 
