@@ -306,8 +306,8 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
   Widget _kv(BuildContext context, String k, String v) => Row(
         children: [
           Text(k, style: TextStyle(color: context.colors.textMuted)),
-          const Spacer(),
-          Flexible(child: Text(v, style: const TextStyle(fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+          const SizedBox(width: 16),
+          Expanded(child: Text(v, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
         ],
       );
 }
