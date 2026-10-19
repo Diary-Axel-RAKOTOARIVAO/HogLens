@@ -501,13 +501,16 @@ class _SvPad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const h = 170.0;
+    // The thumb travels inside an inset area so it is never clipped by the
+    // rounded corners, even at full saturation and brightness.
+    const inset = 16.0;
     return LayoutBuilder(
       builder: (context, box) {
         final w = box.maxWidth;
         void set(Offset p) => onChanged(
           hsv
-              .withSaturation((p.dx / w).clamp(0.0, 1.0))
-              .withValue((1 - p.dy / h).clamp(0.0, 1.0)),
+              .withSaturation(((p.dx - inset) / (w - 2 * inset)).clamp(0.0, 1.0))
+              .withValue((1 - (p.dy - inset) / (h - 2 * inset)).clamp(0.0, 1.0)),
         );
         return _ClaimTouch(
           child: Listener(
@@ -552,8 +555,8 @@ class _SvPad extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      left: hsv.saturation * w - 13,
-                      top: (1 - hsv.value) * h - 13,
+                      left: inset + hsv.saturation * (w - 2 * inset) - 13,
+                      top: inset + (1 - hsv.value) * (h - 2 * inset) - 13,
                       child: _Thumb(color: hsv.toColor()),
                     ),
                   ],
