@@ -131,6 +131,8 @@ class _ChannelBar extends StatelessWidget {
       child: SizedBox(
         height: 12,
         child: Row(
+          // Childless segments have no height of their own; fill the bar.
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var i = 0; i < channels.length; i++) ...[
               Expanded(
