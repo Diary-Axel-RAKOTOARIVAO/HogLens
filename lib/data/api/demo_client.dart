@@ -19,15 +19,18 @@ class DemoClient implements PhApi {
     final q = hogql.toLowerCase();
     final now = DateTime.now();
 
-    if (name == 'hoglens_glance') {
+    if (name == 'hoglens_glance' || name == 'hoglens_glance_week') {
+      // Demo projects differ by project ID so the projects page looks like a
+      // real account with a big, a medium and a small site.
+      final scale = const {1: 1.0, 2: 0.42, 3: 0.17}[projectId] ?? 1.0;
+      if (name == 'hoglens_glance_week') {
+        return QueryResult(columns: const ['visitors'], rows: [[(2980 * scale).round()]]);
+      }
       final today = DateTime(now.year, now.month, now.day);
       return QueryResult(columns: const ['d', 'visitors'], rows: [
         for (var i = 6; i >= 0; i--)
-          [today.subtract(Duration(days: i)).toIso8601String(), i == 0 ? 412 : 380 + ((i * 97) % 190)],
+          [today.subtract(Duration(days: i)).toIso8601String(), ((i == 0 ? 412 : 380 + ((i * 97 + projectId * 41) % 190)) * scale).round()],
       ]);
-    }
-    if (name == 'hoglens_glance_week') {
-      return const QueryResult(columns: ['visitors'], rows: [[2980]]);
     }
     if (name == 'hoglens_hourly') {
       final rows = <List<dynamic>>[];
@@ -40,7 +43,7 @@ class DemoClient implements PhApi {
     }
     if (name == 'hoglens_sources') {
       return const QueryResult(columns: ['src', 'ref', 'ch', 'sessions'], rows: [
-        ['fb', 'm.facebook.com', 'Paid Social', 2065], ['', r'$direct', 'Direct', 701], ['', 'example.com', 'Referral', 410],
+        ['fb', 'm.facebook.com', 'Paid Social', 2065], ['', r'$direct', 'Direct', 701], ['', 'www.youtube.com', 'Organic Video', 410],
         ['', 'm.facebook.com', 'Organic Social', 667], ['fb', 'facebook.com', 'Paid Social', 322], ['', 'www.google.com', 'Organic Search', 245],
         ['ig', 'instagram.com', 'Paid Social', 136], ['', 'instagram.com', 'Organic Social', 58], ['chatgpt.com', r'$direct', 'AI', 94],
         ['', 'l.facebook.com', 'Organic Social', 55], ['', 'www.bing.com', 'Organic Search', 21], ['gemini', r'$direct', 'AI', 62], ['', 'claude.ai', 'AI', 48],
