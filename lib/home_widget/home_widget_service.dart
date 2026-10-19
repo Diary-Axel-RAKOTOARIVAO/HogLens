@@ -63,11 +63,27 @@ class HomeWidgetService {
     }
   }
 
-  static Future<void> _refreshAll() async {
-    for (final k in HomeWidgetKind.values) {
-      await HomeWidget.updateWidget(name: k.androidName, androidName: k.androidName);
+  /// Provider class names of the HogLens widgets currently on the home
+  /// screen. Empty for most people, in which case nothing is written or
+  /// rendered at all.
+  static Future<Set<String>> _installed() async {
+    try {
+      final list = await HomeWidget.getInstalledWidgets();
+      return {for (final w in list) (w.androidClassName ?? '').split('.').last}..remove('');
+    } catch (_) {
+      return const {};
     }
   }
+
+  static Future<void> _refresh(Set<String> installed) async {
+    for (final k in HomeWidgetKind.values) {
+      if (installed.contains(k.androidName)) {
+        await HomeWidget.updateWidget(name: k.androidName, androidName: k.androidName);
+      }
+    }
+  }
+
+
 
   static Map<String, Object?> _labels(PhProject project) => {
         'title': project.name,
@@ -88,6 +104,8 @@ class HomeWidgetService {
   static Future<void> pushGlance(PhProject project, Glance glance) async {
     if (!supported) return;
     try {
+      final installed = await _installed();
+      if (installed.isEmpty) return;
       final today = glance.today;
       final yesterday = glance.daily.length >= 2 ? glance.daily[glance.daily.length - 2] : 0;
       final delta = Metric(current: today, previous: yesterday).delta;
@@ -98,13 +116,10 @@ class HomeWidgetService {
         'delta': delta == null ? '' : '${Fmt.percent(delta)} ${tr('vs yesterday')}',
         'deltaSign': delta == null ? 0 : (delta > 0 ? 1 : (delta < 0 ? -1 : 0)),
       });
-      await HomeWidget.renderFlutterWidget(
-        _Bars(values: glance.daily, color: project.accent),
-        key: 'bars',
-        logicalSize: const Size(140, 36),
-        pixelRatio: 3,
-      );
-      await _refreshAll();
+      // The widget draws the bars itself from these numbers (Android Canvas),
+      // so nothing is rendered offscreen by Flutter.
+      await HomeWidget.saveWidgetData<String>('barsData', glance.daily.join(','));
+      await _refresh(installed);
     } catch (_) {}
   }
 
@@ -112,37 +127,37 @@ class HomeWidgetService {
   static Future<void> pushToday(PhProject project, KeyStats s) async {
     if (!supported || s.range.kind != RangeKind.today) return;
     try {
+      final installed = await _installed();
+      if (installed.isEmpty) return;
       await _save({
         ..._labels(project),
         'views': Fmt.compact(s.views.current),
         'sessions': Fmt.compact(s.sessions.current),
         'live': Fmt.full(s.activeNow),
       });
-      await HomeWidget.renderFlutterWidget(
-        _Spark(points: s.visitorSeries.map((p) => p.v).toList(), color: project.accent),
-        key: 'spark',
-        logicalSize: const Size(300, 70),
-        pixelRatio: 3,
-      );
-      await _refreshAll();
+      await HomeWidget.saveWidgetData<String>('sparkData', s.visitorSeries.map((p) => p.v).join(','));
+      await _refresh(installed);
     } catch (_) {}
   }
 
   static Future<void> pushErrors(PhProject project, ErrorsReport r) async {
     if (!supported) return;
     try {
+      final installed = await _installed();
+      if (installed.isEmpty) return;
       await _save({
         ..._labels(project),
         'errors': Fmt.compact(r.total),
         'topError': r.groups.isEmpty ? tr('No errors today') : '${r.groups.first.type}: ${r.groups.first.message}',
       });
-      await _refreshAll();
+      await _refresh(installed);
     } catch (_) {}
   }
 
   /// Full refresh without the app running: glance, today's stats, errors.
   static Future<bool> refreshInBackground() async {
     try {
+      if ((await _installed()).isEmpty) return true;
       final store = await ProjectStore.open();
       final id = store.widgetProjectId;
       if (id == null) return true;
@@ -179,98 +194,4 @@ void widgetCallbackDispatcher() {
     WidgetsFlutterBinding.ensureInitialized();
     return HomeWidgetService.refreshInBackground();
   });
-}
-
-class _Bars extends StatelessWidget {
-  const _Bars({required this.values, required this.color});
-  final List<num> values;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final max = values.fold<double>(0, (a, b) => b > a ? b.toDouble() : a);
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (var i = 0; i < values.length; i++) ...[
-            Expanded(
-              child: Container(
-                height: max == 0 ? 4 : 4 + 32 * values[i] / max,
-                decoration: BoxDecoration(
-                  color: i == values.length - 1 ? color : color.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-            if (i != values.length - 1) const SizedBox(width: 4),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// Smooth area curve rendered to a bitmap for the large widget.
-class _Spark extends StatelessWidget {
-  const _Spark({required this.points, required this.color});
-  final List<num> points;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: CustomPaint(size: const Size(300, 70), painter: _SparkPainter(points, color)),
-    );
-  }
-}
-
-class _SparkPainter extends CustomPainter {
-  _SparkPainter(this.points, this.color);
-  final List<num> points;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (points.length < 2) return;
-    final max = points.fold<double>(0, (a, b) => b > a ? b.toDouble() : a);
-    final path = Path();
-    for (var i = 0; i < points.length; i++) {
-      final x = size.width * i / (points.length - 1);
-      final y = max == 0 ? size.height - 2 : size.height - 4 - (size.height - 8) * points[i] / max;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        final px = size.width * (i - 1) / (points.length - 1);
-        final py = max == 0 ? size.height - 2 : size.height - 4 - (size.height - 8) * points[i - 1] / max;
-        path.cubicTo(px + (x - px) / 2, py, px + (x - px) / 2, y, x, y);
-      }
-    }
-    final fill = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(
-      fill,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [color.withValues(alpha: 0.35), color.withValues(alpha: 0)],
-        ).createShader(Offset.zero & size),
-    );
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _SparkPainter old) => old.points != points || old.color != color;
 }

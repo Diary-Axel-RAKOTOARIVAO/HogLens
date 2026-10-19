@@ -1,5 +1,6 @@
 package mg.aureon.hoglens
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.widget.RemoteViews
 import mg.aureon.hoglens.WidgetSupport.text
@@ -46,11 +47,11 @@ object OverviewBinding {
 
 object TrendBinding {
     val updatedId: Int? = R.id.widget_updated
-    fun fill(v: RemoteViews, d: SharedPreferences) {
+    fun fill(v: RemoteViews, context: Context, d: SharedPreferences) {
         v.setTextViewText(R.id.widget_visitors, text(d, "visitors"))
         v.setTextViewText(R.id.widget_caption, text(d, "l_visitors_today", "visitors today"))
         WidgetSupport.delta(v, d, R.id.widget_delta)
-        WidgetSupport.image(v, d, "spark", R.id.widget_spark)
+        WidgetSupport.spark(v, context, d, R.id.widget_spark)
         v.setTextViewText(R.id.stat2_value, text(d, "views"))
         v.setTextViewText(R.id.stat2_label, text(d, "l_views", "Views"))
         v.setTextViewText(R.id.stat3_value, text(d, "sessions"))

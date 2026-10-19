@@ -17,7 +17,7 @@ class HogLensWidgetProvider : HomeWidgetProvider() {
             v.setTextViewText(R.id.widget_caption, text(widgetData, "l_visitors_today", "visitors today"))
             v.setTextViewText(R.id.widget_week, text(widgetData, "week", ""))
             WidgetSupport.delta(v, widgetData, R.id.widget_delta)
-            WidgetSupport.image(v, widgetData, "bars", R.id.widget_bars)
+            WidgetSupport.bars(v, context, widgetData, R.id.widget_bars)
             appWidgetManager.updateAppWidget(id, v)
         }
     }

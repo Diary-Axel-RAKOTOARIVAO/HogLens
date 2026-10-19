@@ -12,7 +12,7 @@ class HogLensTrendWidgetProvider : HomeWidgetProvider() {
         appWidgetIds.forEach { id ->
             val v = RemoteViews(context.packageName, R.layout.hoglens_widget_trend)
             WidgetSupport.bind(v, context, widgetData, R.id.widget_root, R.id.widget_title, TrendBinding.updatedId)
-            TrendBinding.fill(v, widgetData)
+            TrendBinding.fill(v, context, widgetData)
             appWidgetManager.updateAppWidget(id, v)
         }
     }
