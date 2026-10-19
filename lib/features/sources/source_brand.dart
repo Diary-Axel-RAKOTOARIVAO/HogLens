@@ -8,7 +8,7 @@ import '../../core/theme/tokens.dart';
 /// A known traffic source: display name, logo asset (Simple Icons, CC0) and
 /// brand color. Brands without a public logo get a glyph or initials.
 class SourceBrand {
-  const SourceBrand(this.key, this.name, this.color, {this.asset, this.glyph, this.initials, this.gradient});
+  const SourceBrand(this.key, this.name, this.color, {this.asset, this.glyph, this.initials, this.gradient, this.tile, this.fullColor = false});
   final String key;
   final String name;
   final Color color;
@@ -16,6 +16,12 @@ class SourceBrand {
   final IconData? glyph;
   final String? initials;
   final Gradient? gradient;
+
+  /// Tile background when it differs from [color] (which tints the bars).
+  final Color? tile;
+
+  /// Draw the logo in its own colors instead of a one-color silhouette.
+  final bool fullColor;
 }
 
 const _instagramGradient = LinearGradient(
@@ -39,9 +45,10 @@ const Map<String, SourceBrand> sourceBrands = {
   'snapchat': SourceBrand('snapchat', 'Snapchat', Color(0xFFFFFC00), asset: 'snapchat'),
   'bluesky': SourceBrand('bluesky', 'Bluesky', Color(0xFF1185FE), asset: 'bluesky'),
   'linkedin': SourceBrand('linkedin', 'LinkedIn', Color(0xFF0A66C2), initials: 'in'),
-  'chatgpt': SourceBrand('chatgpt', 'ChatGPT', Color(0xFF10A37F), glyph: Icons.auto_awesome_rounded),
-  'gemini': SourceBrand('gemini', 'Gemini', Color(0xFF8E75B2), asset: 'googlegemini'),
-  'claude': SourceBrand('claude', 'Claude', Color(0xFFD97757), asset: 'claude'),
+  // ChatGPT, Claude and Gemini as their own app icons present them.
+  'chatgpt': SourceBrand('chatgpt', 'ChatGPT', Color(0xFF10A37F), asset: 'openai', tile: Color(0xFF000000)),
+  'gemini': SourceBrand('gemini', 'Gemini', Color(0xFF3186FF), asset: 'gemini', tile: Color(0xFFF1F4FB), fullColor: true),
+  'claude': SourceBrand('claude', 'Claude', Color(0xFFD97757), asset: 'claude', tile: Color(0xFFF4F3EE), fullColor: true),
   'perplexity': SourceBrand('perplexity', 'Perplexity', Color(0xFF1FB8CD), asset: 'perplexity'),
   'copilot': SourceBrand('copilot', 'Copilot', Color(0xFF000000), asset: 'githubcopilot'),
   'google': SourceBrand('google', 'Google', Color(0xFF4285F4), asset: 'google'),
@@ -125,14 +132,15 @@ class SourceLogo extends StatelessWidget {
         child: Text(letter, style: TextStyle(fontSize: size * 0.42, fontWeight: FontWeight.w700, color: c.textMuted)),
       );
     }
-    final fg = brand.color.computeLuminance() > 0.6 ? const Color(0xFF111111) : Colors.white;
+    final background = brand.tile ?? brand.color;
+    final fg = background.computeLuminance() > 0.6 ? const Color(0xFF111111) : Colors.white;
     Widget inner;
     if (brand.asset != null) {
       inner = SvgPicture.asset(
         'assets/sources/${brand.asset}.svg',
-        width: size * 0.56,
-        height: size * 0.56,
-        colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
+        width: size * (brand.fullColor ? 0.62 : 0.56),
+        height: size * (brand.fullColor ? 0.62 : 0.56),
+        colorFilter: brand.fullColor ? null : ColorFilter.mode(fg, BlendMode.srcIn),
       );
     } else if (brand.glyph != null) {
       inner = Icon(brand.glyph, size: size * 0.56, color: fg);
@@ -144,7 +152,7 @@ class SourceLogo extends StatelessWidget {
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: brand.gradient == null ? (brand.key == 'direct' ? c.surfaceRaised : brand.color) : null,
+        color: brand.gradient == null ? (brand.key == 'direct' ? c.surfaceRaised : background) : null,
         gradient: brand.gradient,
         borderRadius: radius,
       ),

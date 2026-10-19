@@ -43,7 +43,7 @@ class DemoClient implements PhApi {
         ['fb', 'm.facebook.com', 'Paid Social', 2065], ['', r'$direct', 'Direct', 701], ['', 'example.com', 'Referral', 410],
         ['', 'm.facebook.com', 'Organic Social', 667], ['fb', 'facebook.com', 'Paid Social', 322], ['', 'www.google.com', 'Organic Search', 245],
         ['ig', 'instagram.com', 'Paid Social', 136], ['', 'instagram.com', 'Organic Social', 58], ['chatgpt.com', r'$direct', 'AI', 94],
-        ['', 'l.facebook.com', 'Organic Social', 55], ['', 'www.bing.com', 'Organic Search', 21], ['gemini', r'$direct', 'AI', 12],
+        ['', 'l.facebook.com', 'Organic Social', 55], ['', 'www.bing.com', 'Organic Search', 21], ['gemini', r'$direct', 'AI', 62], ['', 'claude.ai', 'AI', 48],
         ['', 'duckduckgo.com', 'Organic Search', 9], ['', 'wa.me', 'Organic Social', 31], ['', 'www.tiktok.com', 'Organic Social', 18],
         ['newsletter', 'mail.google.com', 'Email', 26],
       ]);
