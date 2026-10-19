@@ -17,6 +17,7 @@ A clean, native-feeling PostHog companion for iOS and Android, built with Flutte
 - Android home-screen widget with visitors today, refreshed in the background every 30 minutes.
 - Feature flags list per project.
 - Home screen visitor totals across all projects and an update banner when a newer GitHub release exists.
+- Traffic sources from UTM tags and referrers, with brand logos, campaigns and landing pages.
 - Light and dark themes follow the system.
 - A demo project with fake data lets you explore without a key.
 
@@ -43,6 +44,14 @@ SELECT count() FROM events WHERE event = 'user signed up' AND timestamp >= {rang
 - **Table** renders the raw result, up to ten rows.
 
 PostHog limits personal keys to three concurrent queries and 240 requests per minute; the client serializes calls accordingly.
+
+## Brand
+
+The brand source files live in `brand/`. To rebuild the app's icons, splash screens and in-app logo from them:
+
+```bash
+tool/brand.sh
+```
 
 ## Development
 
