@@ -309,9 +309,14 @@ class _RetentionGrid extends StatelessWidget {
                         height: 30,
                         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(7)),
                         alignment: Alignment.center,
-                        child: Text(
-                          w == 0 ? Fmt.compact(cohort.size) : '${(rate * 100).round()}%',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg, fontFeatures: const [FontFeature.tabularFigures()]),
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        // Sizes like "2.04K" shrink rather than touch the cell edges on narrow phones.
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            w == 0 ? Fmt.compact(cohort.size) : '${(rate * 100).round()}%',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg, fontFeatures: const [FontFeature.tabularFigures()]),
+                          ),
                         ),
                       );
                     }),
