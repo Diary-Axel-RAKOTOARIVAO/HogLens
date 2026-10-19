@@ -5,6 +5,8 @@
 #
 #   tool/release.sh            # version from pubspec.yaml, tags vX.Y.Z
 #
+# Then publishes the APKs to the public download repo (tool/publish_public.sh).
+#
 # Needs: android/key.properties (release key), gh signed in, a clean tree
 # with the release commit already made.
 set -euo pipefail
@@ -39,3 +41,6 @@ git push origin main "$TAG"
 gh release create "$TAG" --title "HogLens $TAG" --notes-file "$DIST/notes.md" \
   "$DIST/hoglens-$V-arm64.apk" "$DIST/hoglens-$V-armv7.apk" "$DIST/hoglens-$V-x86_64.apk"
 gh release view "$TAG" --json url --jq .url
+
+# Public download repo: APKs and notes only (never code or symbols).
+tool/publish_public.sh "$TAG"
