@@ -46,8 +46,14 @@ object WidgetSupport {
     private fun values(d: SharedPreferences, key: String): List<Float> =
         (d.getString(key, null) ?: "").split(',').mapNotNull { it.trim().toFloatOrNull() }
 
+    // Opaque ARGB values exceed Int.MAX_VALUE, so home_widget stores them as
+    // a Long; read either form.
     private fun accent(d: SharedPreferences): Int =
-        try { d.getInt("accent", Color.parseColor("#FF6600")) } catch (_: ClassCastException) { Color.parseColor("#FF6600") }
+        when (val v = d.all["accent"]) {
+            is Int -> v
+            is Long -> v.toInt()
+            else -> Color.parseColor("#FF6600")
+        }
 
     /** Software-drawn bitmaps: no GPU, so they render on any device. */
     private fun density(context: Context) = context.resources.displayMetrics.density.coerceAtMost(2.5f)
