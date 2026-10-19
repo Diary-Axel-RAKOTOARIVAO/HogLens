@@ -421,7 +421,9 @@ final eventDrillProvider = FutureProvider.autoDispose.family<EventDrill, DrillKe
 
 // ---- update check -------------------------------------------------------
 
-const _releasesLatest = 'https://api.github.com/repos/Diary-Axel-RAKOTOARIVAO/HogLens/releases/latest';
+// The app's own repo is private; releases are mirrored to a public repo so
+// the unauthenticated check works for everyone.
+const _releasesLatest = 'https://api.github.com/repos/Diary-Axel-RAKOTOARIVAO/hoglens-releases/releases/latest';
 
 /// Newer GitHub release than the running build, or null. Checked at most
 /// every six hours; failures are silent.

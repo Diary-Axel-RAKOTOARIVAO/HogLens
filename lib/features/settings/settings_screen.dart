@@ -12,7 +12,8 @@ import '../../data/providers/providers.dart';
 import '../../data/providers/settings_provider.dart';
 import '../../shared/ui.dart';
 
-const _repoUrl = 'https://github.com/Diary-Axel-RAKOTOARIVAO/HogLens';
+/// Public releases repo (downloads and issues); the source repo is private.
+const _repoUrl = 'https://github.com/Diary-Axel-RAKOTOARIVAO/hoglens-releases';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -149,14 +150,14 @@ class SettingsScreen extends ConsumerWidget {
           _LinkRow(
             icon: Icons.star_border_rounded,
             title: tr('Star HogLens on GitHub'),
-            subtitle: tr('Open source, built with Flutter'),
+            subtitle: tr('Downloads, release notes and updates'),
             onTap: () => launchUrl(Uri.parse(_repoUrl), mode: LaunchMode.externalApplication),
           ),
           const SizedBox(height: 8),
           _LinkRow(
             icon: SolarIconsOutline.bug,
             title: tr('Report a problem'),
-            subtitle: 'github.com/Diary-Axel-RAKOTOARIVAO/HogLens/issues',
+            subtitle: 'github.com/Diary-Axel-RAKOTOARIVAO/hoglens-releases/issues',
             onTap: () => launchUrl(Uri.parse('$_repoUrl/issues/new'), mode: LaunchMode.externalApplication),
           ),
         ],

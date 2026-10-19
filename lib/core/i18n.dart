@@ -96,7 +96,7 @@ const Map<String, String> _fr = {
   'About': 'À propos',
   'Version': 'Version',
   'Star HogLens on GitHub': 'Mettre une étoile à HogLens sur GitHub',
-  'Open source, built with Flutter': 'Open source, développé avec Flutter',
+  'Downloads, release notes and updates': 'Téléchargements, notes de version et mises à jour',
   'Report a problem': 'Signaler un problème',
   'Check for updates': 'Vérifier les mises à jour',
   'You are on the latest version': 'Vous avez la dernière version',
