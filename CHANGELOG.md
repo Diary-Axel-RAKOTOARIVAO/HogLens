@@ -5,6 +5,11 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-19
+
+### Fixed
+- Traffic sources show the real ChatGPT, Claude and Gemini logos, as their own app icons present them: the OpenAI knot on black, Claude's starburst in terracotta on cream, and Gemini's four-color star. ChatGPT previously had a generic sparkle, and Claude and Gemini were flattened to one color.
+
 ## [1.2.0] - 2026-10-19
 
 ### Added
