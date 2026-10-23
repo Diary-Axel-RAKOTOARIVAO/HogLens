@@ -8,11 +8,18 @@ extension AppColorsX on BuildContext {
       ? AppColors.dark
       : AppColors.light;
 
-  /// [accent] as a filled surface (hero card, primary pill). A near-black
-  /// accent would disappear on the dark theme, so it flips to the text color.
+  /// [accent] as a filled surface (hero card, primary pill). On the dark
+  /// theme the content on it is white: a near-black accent would disappear,
+  /// so it flips to the text color, and a bright one (neon green, yellow) is
+  /// deepened until white text on it reads.
   Color accentFill(Color accent) {
-    final dark = Theme.of(this).brightness == Brightness.dark;
-    return dark && accent.contrastWith(colors.bg) < 1.6 ? colors.text : accent;
+    if (Theme.of(this).brightness != Brightness.dark) return accent;
+    if (accent.contrastWith(colors.bg) < 1.6) return colors.text;
+    var hsl = HSLColor.fromColor(accent);
+    while (hsl.toColor().contrastWith(Colors.white) < 3.2 && hsl.lightness > 0.05) {
+      hsl = hsl.withLightness(hsl.lightness - 0.02);
+    }
+    return hsl.toColor();
   }
 }
 
