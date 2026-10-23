@@ -38,20 +38,11 @@ GROUP BY person_id''';
   static bool _queryFailed(Object e) => e is PosthogException && (e.statusCode == 400 || e.statusCode == 500);
 
   Future<SourcesReport> sources(StatRange range) async {
-    QueryResult r;
-    var visitors = true;
-    try {
-      r = await _client.query(
-        _projectId,
-        'SELECT src, ref, ch, count() AS n FROM (${_firstTouch(range)}) GROUP BY src, ref, ch ORDER BY n DESC LIMIT 1000',
-        name: 'hoglens_sources',
-      );
-    } catch (e) {
-      if (!_queryFailed(e)) rethrow;
-      visitors = false;
-      r = await _client.query(
-        _projectId,
-        '''
+    // Sessions per source, used for the visit counts, or as the main counts
+    // when the visitor query isn't available.
+    final sessionsQ = _client.query(
+      _projectId,
+      '''
 SELECT coalesce(\$entry_utm_source, '') AS src, coalesce(\$entry_referring_domain, '') AS ref,
   coalesce(\$channel_type, 'Unknown') AS ch, count() AS sessions
 FROM sessions
@@ -60,13 +51,29 @@ GROUP BY src, ref, ch
 ORDER BY sessions DESC
 LIMIT 1000
 ''',
-        name: 'hoglens_sources_sessions',
+      name: 'hoglens_sources_sessions',
+    );
+    QueryResult? byVisitor;
+    try {
+      byVisitor = await _client.query(
+        _projectId,
+        'SELECT src, ref, ch, count() AS n FROM (${_firstTouch(range)}) GROUP BY src, ref, ch ORDER BY n DESC LIMIT 1000',
+        name: 'hoglens_sources',
       );
+    } catch (e) {
+      if (!_queryFailed(e)) rethrow;
+    }
+    final bySession = await sessionsQ;
+
+    final visits = <String, num>{};
+    for (final row in bySession.rows) {
+      final (key, _) = classifySource('${row[0] ?? ''}', '${row[1] ?? ''}');
+      visits[key] = (visits[key] ?? 0) + _n(row[3]);
     }
 
     final bySource = <String, _Acc>{};
     final byChannel = <String, num>{};
-    for (final row in r.rows) {
+    for (final row in (byVisitor ?? bySession).rows) {
       final src = '${row[0] ?? ''}', ref = '${row[1] ?? ''}', ch = '${row[2] ?? 'Unknown'}';
       final n = _n(row[3]);
       byChannel[ch] = (byChannel[ch] ?? 0) + n;
@@ -77,9 +84,15 @@ LIMIT 1000
       acc.channels[ch] = (acc.channels[ch] ?? 0) + n;
       acc.pairs.add((src, ref));
     }
-    final sources = bySource.values.map((a) => a.build()).toList()..sort((a, b) => b.count.compareTo(a.count));
+    final sources = bySource.values.map((a) => a.build(visits[a.key] ?? a.count)).toList()
+      ..sort((a, b) => b.count.compareTo(a.count));
     final channels = byChannel.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2));
-    return SourcesReport(sources: sources, channels: channels, visitors: visitors);
+    return SourcesReport(
+      sources: sources,
+      channels: channels,
+      visitors: byVisitor != null,
+      visits: visits.values.fold<num>(0, (a, n) => a + n),
+    );
   }
 
   /// Campaigns, landing pages and a trend for one source, in the same unit as
@@ -143,8 +156,8 @@ class _Acc {
   final Map<String, num> channels = {};
   final List<(String, String)> pairs = [];
 
-  TrafficSource build() {
+  TrafficSource build(num visits) {
     final top = channels.entries.reduce((a, b) => b.value > a.value ? b : a).key;
-    return TrafficSource(key: key, name: name, count: count, paid: paid, channel: top, pairs: pairs);
+    return TrafficSource(key: key, name: name, count: count, visits: visits, paid: paid, channel: top, pairs: pairs);
   }
 }

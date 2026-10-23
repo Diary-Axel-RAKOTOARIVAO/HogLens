@@ -64,6 +64,10 @@ class _Body extends StatelessWidget {
     final paidNote = lead.paid == 0
         ? ''
         : ' · ${(lead.paidShare * 100).round()}% ${tr('paid')}';
+    // Unique visitors leave out people coming back; say how many visits that is.
+    final visitsNote = report.visitors && report.visits > total
+        ? ' ${tr('They made')} ${Fmt.compact(report.visits)} ${tr('visits, counting returns.')}'
+        : '';
     final shown = report.sources.take(8).toList();
     final rest = report.sources.skip(8).fold<num>(0, (a, s) => a + s.count);
 
@@ -71,7 +75,7 @@ class _Body extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${lead.name} ${tr('brings')} $leadShare% ${tr('of')} ${Fmt.compact(total)} $unit$paidNote.',
+          '${lead.name} ${tr('brings')} $leadShare% ${tr('of')} ${Fmt.compact(total)} $unit$paidNote.$visitsNote',
           style: TextStyle(color: c.textMuted, fontSize: 15, height: 1.4),
         ),
         const SizedBox(height: 18),
@@ -274,7 +278,9 @@ class _SourceSheet extends ConsumerWidget {
                   children: [
                     Text(source.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 24)),
                     Text(
-                      '${Fmt.full(source.count)} ${visitors ? tr('visitors') : tr('sessions')} · ${channelLabel(source.channel)}'
+                      '${Fmt.full(source.count)} ${visitors ? tr('visitors') : tr('sessions')}'
+                      '${visitors && source.visits > source.count ? ' · ${Fmt.full(source.visits)} ${tr('visits')}' : ''}'
+                      ' · ${channelLabel(source.channel)}'
                       '${source.paid > 0 ? ' · ${(source.paidShare * 100).round()}% ${tr('paid')}' : ''}',
                       style: TextStyle(fontSize: 13, color: c.textMuted),
                     ),

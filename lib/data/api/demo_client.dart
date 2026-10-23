@@ -41,8 +41,7 @@ class DemoClient implements PhApi {
       }
       return QueryResult(columns: const ['bucket', 'count'], rows: rows);
     }
-    if (name == 'hoglens_sources') {
-      // First-touch visitors; scaled below so they add up to the hero's 2,980.
+    if (name == 'hoglens_sources' || name == 'hoglens_sources_sessions') {
       const raw = [
         ['fb', 'm.facebook.com', 'Paid Social', 2065], ['', r'$direct', 'Direct', 701], ['', 'www.youtube.com', 'Organic Video', 410],
         ['', 'm.facebook.com', 'Organic Social', 667], ['fb', 'facebook.com', 'Paid Social', 322], ['', 'www.google.com', 'Organic Search', 245],
@@ -51,9 +50,11 @@ class DemoClient implements PhApi {
         ['', 'duckduckgo.com', 'Organic Search', 9], ['', 'wa.me', 'Organic Social', 31], ['', 'www.tiktok.com', 'Organic Social', 18],
         ['newsletter', 'mail.google.com', 'Email', 26],
       ];
+      // Sessions add up to the Sessions card (5,410), visitors to the hero (2,980).
+      final target = name == 'hoglens_sources_sessions' ? 5410 : 2980;
       final sum = raw.fold<int>(0, (a, r) => a + (r[3] as int));
-      final rows = [for (final r in raw) [r[0], r[1], r[2], ((r[3] as int) * 2980 / sum).floor()]];
-      rows.first[3] = (rows.first[3] as int) + 2980 - rows.fold<int>(0, (a, r) => a + (r[3] as int));
+      final rows = [for (final r in raw) [r[0], r[1], r[2], ((r[3] as int) * target / sum).floor()]];
+      rows.first[3] = (rows.first[3] as int) + target - rows.fold<int>(0, (a, r) => a + (r[3] as int));
       return QueryResult(columns: const ['src', 'ref', 'ch', 'n'], rows: rows);
     }
     if (name == 'hoglens_source_campaigns') {
