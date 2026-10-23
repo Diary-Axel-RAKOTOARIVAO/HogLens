@@ -589,7 +589,7 @@ class SourcesNotifier extends AsyncNotifier<SourcesReport> {
       emit: (v) => state = AsyncData(v),
       loaded: _isLoaded(() => state),
       cache: ref.read(cacheProvider),
-      key: 'sources_${projectId}_${range.cacheKey}',
+      key: 'sources2_${projectId}_${range.cacheKey}',
       decode: (d, _) => SourcesReport.fromJson(d),
       encode: (v) => v.toJson(),
       fetch: () async {
@@ -610,9 +610,9 @@ final sourceDetailProvider = FutureProvider.autoDispose.family<SourceDetail, Sou
   if (project == null) throw PosthogException('Project removed.');
   final report = await ref.watch(sourcesProvider(projectId).future);
   final source = report.sources.where((s) => s.key == sourceKey).firstOrNull;
-  if (source == null) throw PosthogException('No sessions from this source in this window.');
+  if (source == null) throw PosthogException('No visits from this source in this window.');
   final client = await ref.watch(clientProvider(projectId).future);
-  return SourcesRepository(client, project.projectId).detail(source, currentRange(ref));
+  return SourcesRepository(client, project.projectId).detail(source, currentRange(ref), visitors: report.visitors);
 });
 
 class TopEventsNotifier extends AsyncNotifier<List<TopEvent>> {

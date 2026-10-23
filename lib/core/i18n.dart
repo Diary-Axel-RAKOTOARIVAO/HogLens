@@ -58,6 +58,8 @@ const Map<String, String> _fr = {
   'Refresh': 'Actualiser',
   'Traffic sources': 'Sources de trafic',
   'No sessions in this range.': 'Aucune session sur cette période.',
+  'No visits in this range.': 'Aucune visite sur cette période.',
+  'New visitors': 'Nouveaux visiteurs',
   'brings': 'apporte',
   'of': 'des',
   'sessions': 'sessions',

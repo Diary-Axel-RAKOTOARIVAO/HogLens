@@ -13,7 +13,7 @@ import '../../shared/ui.dart';
 import '../dashboard/charts.dart';
 import 'source_brand.dart';
 
-/// Dashboard card: sessions by channel as one stacked bar, then the top
+/// Dashboard card: visitors by channel as one stacked bar, then the top
 /// sources with their logos. Tap a source for campaigns and landing pages.
 class TrafficSourcesCard extends ConsumerWidget {
   const TrafficSourcesCard({super.key, required this.project, required this.rangeLabel});
@@ -40,7 +40,7 @@ class TrafficSourcesCard extends ConsumerWidget {
             ),
             error: (e, _) => Text('$e', style: TextStyle(color: c.negative, fontSize: 13)),
             data: (r) => r.sources.isEmpty
-                ? Text(tr('No sessions in this range.'), style: TextStyle(color: c.textMuted, fontSize: 15))
+                ? Text(tr('No visits in this range.'), style: TextStyle(color: c.textMuted, fontSize: 15))
                 : _Body(report: r, project: project),
           ),
         ],
@@ -59,18 +59,19 @@ class _Body extends StatelessWidget {
     final c = context.colors;
     final total = report.total;
     final lead = report.sources.first;
-    final leadShare = total == 0 ? 0 : (lead.sessions / total * 100).round();
+    final unit = report.visitors ? tr('visitors') : tr('sessions');
+    final leadShare = total == 0 ? 0 : (lead.count / total * 100).round();
     final paidNote = lead.paid == 0
         ? ''
         : ' · ${(lead.paidShare * 100).round()}% ${tr('paid')}';
     final shown = report.sources.take(8).toList();
-    final rest = report.sources.skip(8).fold<num>(0, (a, s) => a + s.sessions);
+    final rest = report.sources.skip(8).fold<num>(0, (a, s) => a + s.count);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${lead.name} ${tr('brings')} $leadShare% ${tr('of')} ${Fmt.compact(total)} ${tr('sessions')}$paidNote.',
+          '${lead.name} ${tr('brings')} $leadShare% ${tr('of')} ${Fmt.compact(total)} $unit$paidNote.',
           style: TextStyle(color: c.textMuted, fontSize: 15, height: 1.4),
         ),
         const SizedBox(height: 18),
@@ -99,16 +100,16 @@ class _Body extends StatelessWidget {
           _SourceRow(
             source: shown[i],
             total: total,
-            max: shown.first.sessions,
+            max: shown.first.count,
             accent: project.accent,
-            onTap: () => showSourceDetail(context, project: project, source: shown[i]),
+            onTap: () => showSourceDetail(context, project: project, source: shown[i], visitors: report.visitors),
           ),
           if (i != shown.length - 1) const SizedBox(height: 14),
         ],
         if (rest > 0) ...[
           const SizedBox(height: 14),
           Text(
-            '+ ${report.sources.length - shown.length} ${tr('more sources')} · ${Fmt.compact(rest)} ${tr('sessions')}',
+            '+ ${report.sources.length - shown.length} ${tr('more sources')} · ${Fmt.compact(rest)} $unit',
             style: TextStyle(fontSize: 12.5, color: c.textFaint),
           ),
         ],
@@ -159,7 +160,7 @@ class _SourceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final share = total == 0 ? 0.0 : source.sessions / total;
+    final share = total == 0 ? 0.0 : source.count / total;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -186,7 +187,7 @@ class _SourceRow extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: max == 0 ? 0 : (source.sessions / max).toDouble(),
+                    value: max == 0 ? 0 : (source.count / max).toDouble(),
                     minHeight: 6,
                     backgroundColor: c.surfaceRaised,
                     color: sourceBrands[source.key]?.color ?? accent,
@@ -200,7 +201,7 @@ class _SourceRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                Fmt.compact(source.sessions),
+                Fmt.compact(source.count),
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: c.text, fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               Text(
@@ -234,19 +235,20 @@ class _Tag extends StatelessWidget {
 
 /// Drawer with one source's trend, campaigns (UTM campaign and medium) and
 /// landing pages over the dashboard window.
-Future<void> showSourceDetail(BuildContext context, {required PhProject project, required TrafficSource source}) {
+Future<void> showSourceDetail(BuildContext context, {required PhProject project, required TrafficSource source, required bool visitors}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => _SourceSheet(project: project, source: source),
+    builder: (_) => _SourceSheet(project: project, source: source, visitors: visitors),
   );
 }
 
 class _SourceSheet extends ConsumerWidget {
-  const _SourceSheet({required this.project, required this.source});
+  const _SourceSheet({required this.project, required this.source, required this.visitors});
   final PhProject project;
   final TrafficSource source;
+  final bool visitors;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -272,7 +274,7 @@ class _SourceSheet extends ConsumerWidget {
                   children: [
                     Text(source.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 24)),
                     Text(
-                      '${Fmt.full(source.sessions)} ${tr('sessions')} · ${channelLabel(source.channel)}'
+                      '${Fmt.full(source.count)} ${visitors ? tr('visitors') : tr('sessions')} · ${channelLabel(source.channel)}'
                       '${source.paid > 0 ? ' · ${(source.paidShare * 100).round()}% ${tr('paid')}' : ''}',
                       style: TextStyle(fontSize: 13, color: c.textMuted),
                     ),
@@ -292,7 +294,7 @@ class _SourceSheet extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CardLabel(tr('Sessions'), icon: SolarIconsOutline.graphUp),
+                      CardLabel(visitors ? tr('New visitors') : tr('Sessions'), icon: SolarIconsOutline.graphUp),
                       const SizedBox(height: 14),
                       TrendChart(points: d.series, color: color, height: 120, hourly: d.series.length > 1 && d.series[1].t.difference(d.series[0].t).inHours < 24),
                     ],
@@ -331,7 +333,7 @@ class _SourceSheet extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                Fmt.compact(d.campaigns[i].sessions),
+                                Fmt.compact(d.campaigns[i].count),
                                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.text, fontFeatures: const [FontFeature.tabularFigures()]),
                               ),
                             ],

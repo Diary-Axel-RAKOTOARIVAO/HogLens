@@ -105,14 +105,17 @@ void main() {
         final r = RangeSelection.week.resolve(DateTime.now());
         final repo = SourcesRepository(client, id);
         final report = await repo.sources(r);
-        print('sources → ${report.sources.length} sources, ${report.total} sessions; '
+        print('sources → ${report.sources.length} sources, ${report.total} ${report.visitors ? 'visitors' : 'sessions (fallback)'}; '
             'channels ${report.channels.take(4).map((c) => '${c.$1}=${c.$2}').join(' ')}; '
-            'top ${report.sources.take(6).map((s) => '${s.name}=${s.sessions}${s.paid > 0 ? '(paid ${(s.paidShare * 100).round()}%)' : ''}').join(', ')}');
+            'top ${report.sources.take(6).map((s) => '${s.name}=${s.count}${s.paid > 0 ? '(paid ${(s.paidShare * 100).round()}%)' : ''}').join(', ')}');
         expect(report.sources, isNotEmpty);
-        expect(report.sources.fold<num>(0, (a, s) => a + s.sessions), report.total);
-        final detail = await repo.detail(report.sources.first, r);
+        expect(report.sources.fold<num>(0, (a, s) => a + s.count), report.total);
+        // Each visitor is credited to one source, so the card adds up to the hero.
+        expect(report.visitors, isTrue);
+        expect(report.total, (await StatsRepository(client, id).fetch(r)).visitors.current);
+        final detail = await repo.detail(report.sources.first, r, visitors: report.visitors);
         print('detail(${report.sources.first.name}) → campaigns ${detail.campaigns.length} '
-            '(${detail.campaigns.take(2).map((c) => '${c.campaign}/${c.medium}=${c.sessions}').join(', ')}), '
+            '(${detail.campaigns.take(2).map((c) => '${c.campaign}/${c.medium}=${c.count}').join(', ')}), '
             'landing ${detail.landingPages.take(3)}, series ${detail.series.length}');
         expect(detail.series.length, r.bucketCount);
         final top = await StatsRepository(client, id).topEvents(r);

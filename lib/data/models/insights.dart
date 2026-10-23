@@ -239,37 +239,38 @@ class GeoReport {
 }
 
 /// One traffic source (Facebook, Google, ChatGPT, a referring domain…) over
-/// the dashboard window, built from PostHog's sessions table.
+/// the dashboard window: unique visitors whose first visit came from it, or
+/// sessions when the report fell back to the sessions table.
 @immutable
 class TrafficSource {
   const TrafficSource({
     required this.key,
     required this.name,
-    required this.sessions,
+    required this.count,
     required this.paid,
     required this.channel,
     required this.pairs,
   });
   final String key;
   final String name;
-  final num sessions;
+  final num count;
 
-  /// Sessions PostHog classified as a paid channel.
+  /// Visitors (or sessions) PostHog classified as a paid channel.
   final num paid;
 
-  /// The channel most of this source's sessions fall in.
+  /// The channel most of this source's traffic falls in.
   final String channel;
 
   /// Raw (utm_source, referring_domain) pairs that make up this source,
   /// used to filter the detail queries.
   final List<(String, String)> pairs;
 
-  double get paidShare => sessions == 0 ? 0 : paid / sessions;
+  double get paidShare => count == 0 ? 0 : paid / count;
 
   Map<String, dynamic> toJson() => {
         'k': key,
         'n': name,
-        's': sessions,
+        's': count,
         'p': paid,
         'c': channel,
         'r': [for (final (u, d) in pairs) [u, d]],
@@ -277,7 +278,7 @@ class TrafficSource {
   factory TrafficSource.fromJson(Map<String, dynamic> j) => TrafficSource(
         key: j['k'] as String,
         name: j['n'] as String,
-        sessions: j['s'] as num,
+        count: j['s'] as num,
         paid: j['p'] as num,
         channel: j['c'] as String,
         pairs: [for (final r in (j['r'] as List)) ((r as List)[0] as String, r[1] as String)],
@@ -286,19 +287,25 @@ class TrafficSource {
 
 @immutable
 class SourcesReport {
-  const SourcesReport({required this.sources, required this.channels});
+  const SourcesReport({required this.sources, required this.channels, required this.visitors});
   final List<TrafficSource> sources;
 
-  /// Sessions per PostHog channel type, largest first.
+  /// Counts per PostHog channel type, largest first.
   final List<(String, num)> channels;
+
+  /// True when counts are unique visitors (matching the dashboard hero),
+  /// false when they are sessions.
+  final bool visitors;
 
   num get total => channels.fold<num>(0, (a, c) => a + c.$2);
 
   Map<String, dynamic> toJson() => {
         's': sources.map((s) => s.toJson()).toList(),
         'c': [for (final (k, v) in channels) [k, v]],
+        'v': visitors,
       };
   factory SourcesReport.fromJson(Map<String, dynamic> j) => SourcesReport(
+        visitors: j['v'] as bool? ?? false,
         sources: (j['s'] as List).map((s) => TrafficSource.fromJson(s as Map<String, dynamic>)).toList(),
         channels: [for (final c in (j['c'] as List)) ((c as List)[0] as String, c[1] as num)],
       );
@@ -306,10 +313,10 @@ class SourcesReport {
 
 @immutable
 class SourceCampaign {
-  const SourceCampaign({required this.campaign, required this.medium, required this.sessions});
+  const SourceCampaign({required this.campaign, required this.medium, required this.count});
   final String campaign;
   final String medium;
-  final num sessions;
+  final num count;
 }
 
 @immutable
