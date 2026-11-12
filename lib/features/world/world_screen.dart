@@ -1,3 +1,4 @@
+import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -175,7 +176,7 @@ class WorldScreen extends ConsumerWidget {
                             i++
                           ) ...[
                             _CountryRow(
-                              flag: r.countries[i].flag,
+                              code: r.countries[i].code,
                               name: r.countries[i].name,
                               visitors: r.countries[i].visitors,
                               share: total == 0
@@ -207,14 +208,14 @@ class WorldScreen extends ConsumerWidget {
 
 class _CountryRow extends StatelessWidget {
   const _CountryRow({
-    required this.flag,
+    required this.code,
     required this.name,
     required this.visitors,
     required this.share,
     required this.fraction,
     required this.color,
   });
-  final String flag;
+  final String code;
   final String name;
   final num visitors;
   final double share;
@@ -228,7 +229,9 @@ class _CountryRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(flag, style: const TextStyle(fontSize: 18)),
+            code.length == 2
+                ? CountryFlag.fromCountryCode(code, theme: const ImageTheme(width: 24, height: 24, shape: Circle()))
+                : const SizedBox(width: 24, height: 24),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

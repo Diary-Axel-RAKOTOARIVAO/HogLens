@@ -216,11 +216,6 @@ class CountryStat {
   final num visitors;
   final num events;
 
-  /// Regional-indicator flag for the ISO code.
-  String get flag => code.length == 2
-      ? String.fromCharCodes(code.toUpperCase().codeUnits.map((c) => 0x1F1E6 + c - 65))
-      : '🏳️';
-
   List<dynamic> toJson() => [code, name, visitors, events];
   factory CountryStat.fromJson(List<dynamic> j) =>
       CountryStat(code: j[0] as String, name: j[1] as String, visitors: j[2] as num, events: j[3] as num);

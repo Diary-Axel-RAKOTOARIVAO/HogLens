@@ -199,7 +199,7 @@ class _GlobePainter extends CustomPainter {
       if (z <= 0.15) continue;
       final vis = ((z + 0.1) / 1.1).clamp(0.15, 1.0);
       final flag = TextPainter(
-        text: TextSpan(text: c.flag, style: const TextStyle(fontSize: 16)),
+        text: TextSpan(text: c.code.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: bubbleText.withValues(alpha: vis))),
         textDirection: TextDirection.ltr,
       )..layout();
       final label = TextPainter(
