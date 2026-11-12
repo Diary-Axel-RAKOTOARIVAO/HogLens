@@ -56,6 +56,8 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
   Future<void> _pickWidget(BuildContext context) async {
     final c = context.colors;
     final supported = await HomeWidget.isRequestPinWidgetSupported() ?? false;
+    final project = ref.read(projectProvider(widget.projectId));
+    var range = WidgetRange.today;
     if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
@@ -65,7 +67,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
         expand: false,
         initialChildSize: 0.8,
         maxChildSize: 0.94,
-        builder: (ctx, ctrl) => ListView(
+        builder: (ctx, ctrl) => StatefulBuilder(builder: (ctx, setSheet) => ListView(
           controller: ctrl,
           padding: const EdgeInsets.fromLTRB(Spacing.page, 0, Spacing.page, 28),
           children: [
@@ -75,7 +77,27 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
               supported ? tr('Pick a size. Each shows a different slice of this project.') : tr('Long-press your home screen to add the HogLens widget.'),
               style: TextStyle(color: c.textMuted),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
+            if (supported) ...[
+              Text(tr('Period').toUpperCase(), style: Theme.of(ctx).textTheme.labelSmall),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  for (final r in WidgetRange.values) ...[
+                    ChoiceChip(
+                      label: Text(tr(r.label)),
+                      selected: range == r,
+                      onSelected: (_) => setSheet(() => range = r),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(tr('Applies to Visitors, Errors, Overview and Trend. Change it later under App settings.'),
+                  style: TextStyle(fontSize: 12, color: c.textFaint)),
+              const SizedBox(height: 14),
+            ],
             for (final k in HomeWidgetKind.values)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -85,7 +107,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                   onTap: supported
                       ? () async {
                           Navigator.pop(ctx);
-                          await HomeWidget.requestPinWidget(name: k.androidName, androidName: k.androidName);
+                          if (project != null) await HomeWidgetService.pin(k, project, range, ref.read(storeProvider));
                         }
                       : null,
                   child: Row(
@@ -113,7 +135,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                 ),
               ),
           ],
-        ),
+        )),
       ),
     );
   }
@@ -259,7 +281,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(tr('Show this project on the widget'), style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(tr('Default project for new widgets'), style: TextStyle(fontWeight: FontWeight.w600)),
                             Text(tr('Visitors today and the last seven days, refreshed every 30 minutes.'),
                                 style: TextStyle(fontSize: 12.5, color: c.textMuted)),
                           ],

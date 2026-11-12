@@ -6,4 +6,5 @@
     <string name="widget_desc_errors">Exceptions today and the top one</string>
     <string name="widget_desc_overview">Visitors, views, sessions and live</string>
     <string name="widget_desc_trend">Today’s hourly curve with key numbers</string>
+    <string name="widget_desc_project">The project card from the app: visitors today and the week</string>
 </resources>

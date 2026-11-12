@@ -5,4 +5,5 @@
     <color name="widget_muted">#9A9A97</color>
     <color name="widget_faint">#5E5E5C</color>
     <color name="widget_chip">#262628</color>
+    <color name="widget_border">#1FFFFFFF</color>
 </resources>

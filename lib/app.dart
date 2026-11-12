@@ -13,6 +13,7 @@ import 'features/flags/flags_screen.dart';
 import 'features/projects/add_project_screen.dart';
 import 'features/projects/home_screen.dart';
 import 'features/projects/project_settings_screen.dart';
+import 'features/widgets/placed_widgets_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'data/providers/settings_provider.dart';
 import 'features/world/world_screen.dart';
@@ -24,7 +25,11 @@ final _router = GoRouter(
       builder: (_, _) => const HomeScreen(),
       routes: [
         GoRoute(path: 'add', builder: (_, _) => const AddProjectScreen()),
-        GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
+        GoRoute(
+          path: 'settings',
+          builder: (_, _) => const SettingsScreen(),
+          routes: [GoRoute(path: 'widgets', builder: (_, _) => const PlacedWidgetsScreen())],
+        ),
         GoRoute(
           path: 'p/:id',
           builder: (_, s) => DashboardScreen(projectId: s.pathParameters['id']!),
@@ -59,6 +64,18 @@ final _router = GoRouter(
     ),
   ],
 );
+
+/// Opens the screen a tapped home-screen widget points at
+/// (`hoglens://widget/p/<project>[/live|/errors]`), with the dashboard under it.
+void openWidgetLink(Uri? uri) {
+  if (uri == null || uri.host != 'widget') return;
+  final seg = uri.pathSegments;
+  if (seg.length < 2 || seg.first != 'p') return;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _router.go('/p/${seg[1]}');
+    if (seg.length > 2) _router.push('/p/${seg[1]}/${seg[2]}');
+  });
+}
 
 class HogLensApp extends ConsumerWidget {
   const HogLensApp({super.key});

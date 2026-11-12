@@ -5,6 +5,16 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+### Added
+- Each home screen widget now has its own project and period (Today, 7 days or 30 days). Pick them when you add a widget, and change them later under App settings → Home screen widgets.
+- New Project card widget (4 × 1): the card from the home screen, with the logo, visitors today and the last seven days.
+- Tapping a widget opens the matching screen: Live opens the live feed, Errors opens Errors, the others open the project.
+- Tap the time on a widget to refresh it without opening the app. A widget that has not updated for 90 minutes is marked as stale.
+
+### Changed
+- Widgets have a richer look: an accent dot, tinted change pills and charts sized to the widget.
+- The language picker and the Worldwide country list use flag icons instead of emoji.
+
 ## [1.2.3] - 2026-10-19
 
 ### Changed

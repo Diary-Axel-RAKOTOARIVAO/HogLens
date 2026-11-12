@@ -10,9 +10,11 @@ import mg.aureon.hoglens.WidgetSupport.text
 class HogLensOverviewWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, widgetData: SharedPreferences) {
         appWidgetIds.forEach { id ->
+            val d = WidgetSupport.scoped(widgetData, id)
+            WidgetSupport.measure(appWidgetManager, id)
             val v = RemoteViews(context.packageName, R.layout.hoglens_widget_overview)
-            WidgetSupport.bind(v, context, widgetData, R.id.widget_root, R.id.widget_title, OverviewBinding.updatedId)
-            OverviewBinding.fill(v, widgetData)
+            WidgetSupport.bind(v, context, d, R.id.widget_root, R.id.widget_title, OverviewBinding.updatedId)
+            OverviewBinding.fill(v, d)
             appWidgetManager.updateAppWidget(id, v)
         }
     }

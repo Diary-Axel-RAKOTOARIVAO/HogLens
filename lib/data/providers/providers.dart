@@ -197,9 +197,7 @@ class KeyStatsNotifier extends AsyncNotifier<KeyStats> {
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
         final stats = await StatsRepository(client, project.projectId).fetch(range);
-        if (ref.read(storeProvider).widgetProjectId == projectId) {
-          unawaited(HomeWidgetService.pushToday(project, stats));
-        }
+        unawaited(HomeWidgetService.pushToday(project, stats));
         return stats;
       },
     );
@@ -228,9 +226,7 @@ class GlanceNotifier extends AsyncNotifier<Glance> {
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
         final glance = await StatsRepository(client, project.projectId).glance();
-        if (ref.read(storeProvider).widgetProjectId == projectId) {
-          unawaited(HomeWidgetService.pushGlance(project, glance));
-        }
+        unawaited(HomeWidgetService.pushGlance(project, glance));
         return glance;
       },
     );
@@ -398,7 +394,7 @@ class ErrorsNotifier extends AsyncNotifier<ErrorsReport> {
       fetch: () async {
         final client = await ref.watch(clientProvider(projectId).future);
         final report = await InsightsRepository(client, project.projectId).errors(range);
-        if (range.kind == RangeKind.today && ref.read(storeProvider).widgetProjectId == projectId) {
+        if (range.kind == RangeKind.today) {
           unawaited(HomeWidgetService.pushErrors(project, report));
         }
         return report;

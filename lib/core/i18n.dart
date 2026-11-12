@@ -2,13 +2,14 @@
 /// later language) overrides them. `tr()` falls back to the key, so an
 /// untranslated string still reads correctly in English.
 enum AppLanguage {
-  en('English', 'en', '🇬🇧'),
-  fr('Français', 'fr', '🇫🇷');
+  en('English', 'en', 'GB'),
+  fr('Français', 'fr', 'FR');
 
-  const AppLanguage(this.label, this.code, this.flag);
+  const AppLanguage(this.label, this.code, this.country);
   final String label;
   final String code;
-  final String flag;
+  /// ISO country code of the flag icon shown in the picker.
+  final String country;
 }
 
 AppLanguage currentLanguage = AppLanguage.en;
@@ -30,6 +31,24 @@ String shortMonth(int m) => (currentLanguage == AppLanguage.fr ? _shortFr : _sho
 String monthDay(DateTime d) => currentLanguage == AppLanguage.fr ? '${d.day} ${shortMonth(d.month)}' : '${shortMonth(d.month)} ${d.day}';
 
 const Map<String, String> _fr = {
+  'Project card': 'Carte du projet',
+  'The card from the home screen: logo, visitors today and the week.': 'La carte de l’accueil : logo, visiteurs du jour et de la semaine.',
+  'The curve for the period with the key numbers.': 'La courbe de la période avec les chiffres clés.',
+  'Exceptions and the most frequent one. Tap to open Errors.': 'Exceptions et la plus fréquente. Touchez pour ouvrir Erreurs.',
+  'People on the site in the last five minutes. Tap to open the live feed.': 'Personnes sur le site ces cinq dernières minutes. Touchez pour ouvrir le direct.',
+  'Visitors for the period you pick, nothing else.': 'Les visiteurs de la période choisie, rien d’autre.',
+  'Removed project': 'Projet supprimé',
+  'Tap a widget to change its project or period. Tap the time on a widget to refresh it.': 'Touchez un widget pour changer son projet ou sa période. Touchez l’heure sur un widget pour l’actualiser.',
+  'Add one from a project’s settings, or long-press your home screen.': 'Ajoutez-en un depuis les réglages d’un projet, ou appuyez longuement sur l’écran d’accueil.',
+  'No widgets yet': 'Aucun widget pour l’instant',
+  'Project': 'Projet',
+  'errors': 'erreurs',
+  'Stale': 'Ancien',
+  '30 days': '30 jours',
+  '7 days': '7 jours',
+  'Default project for new widgets': 'Projet par défaut des nouveaux widgets',
+  'Applies to Visitors, Errors, Overview and Trend. Change it later under App settings.': 'S’applique à Visiteurs, Erreurs, Aperçu et Tendance. Modifiable ensuite dans les réglages de l’app.',
+  'Period': 'Période',
   // Home
   'Projects': 'Projets',
   'Nothing connected yet': 'Rien de connecté pour l’instant',

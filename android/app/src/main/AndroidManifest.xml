@@ -28,6 +28,14 @@
             </intent-filter>
         </activity>
         <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".HogLensWidgetProvider"
             android:exported="true"
             android:label="HogLens · Week">
@@ -37,6 +45,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/hoglens_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".HogLensProjectWidgetProvider"
+            android:exported="true"
+            android:label="HogLens · Project">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/hoglens_widget_project_info" />
         </receiver>
 
         <receiver

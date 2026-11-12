@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/hoglens_widget_bg" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="14dp" android:paddingEnd="16dp" android:paddingTop="10dp" android:paddingBottom="10dp">
+  <ImageView android:id="@+id/widget_avatar" android:layout_width="48dp" android:layout_height="48dp" android:scaleType="fitXY" android:contentDescription="@null" />
+  <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:orientation="vertical">
+    <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textStyle="bold" android:includeFontPadding="false" android:textColor="@color/widget_text" android:textSize="16sp" android:ellipsize="end" android:maxLines="1" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:orientation="horizontal">
+      <TextView android:id="@+id/widget_host" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/hoglens_pill_flat" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="@color/widget_muted" android:textSize="11sp" android:maxLines="1" />
+      <TextView android:id="@+id/widget_pid" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:background="@drawable/hoglens_pill_flat" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="@color/widget_muted" android:textSize="11sp" android:maxLines="1" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:gravity="end" android:orientation="vertical">
+    <TextView android:id="@+id/widget_visitors" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:includeFontPadding="false" android:fontFeatureSettings="tnum" android:letterSpacing="-0.02" android:textColor="@color/widget_text" android:textSize="22sp" />
+    <TextView android:id="@+id/widget_caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:includeFontPadding="false" android:textColor="@color/widget_muted" android:textSize="11sp" android:maxLines="1" />
+    <ImageView android:id="@+id/widget_bars" android:layout_width="88dp" android:layout_height="18dp" android:layout_marginTop="5dp" android:scaleType="fitXY" android:contentDescription="Last seven days" />
+  </LinearLayout>
+</LinearLayout>

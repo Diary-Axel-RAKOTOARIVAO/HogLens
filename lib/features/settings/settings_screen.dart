@@ -1,3 +1,4 @@
+import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/providers/providers.dart';
 import '../../data/providers/settings_provider.dart';
+import '../../home_widget/home_widget_service.dart';
 import '../../shared/ui.dart';
 
 /// Public releases repo (downloads and issues); the source repo is private.
@@ -82,11 +84,27 @@ class SettingsScreen extends ConsumerWidget {
           Text(tr('Language').toUpperCase(), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 10),
           choice<AppLanguage>(
-            options: [for (final l in AppLanguage.values) (l, l.label, Text(l.flag, style: const TextStyle(fontSize: 18)))],
+            options: [for (final l in AppLanguage.values) (l, l.label, CountryFlag.fromCountryCode(l.country, theme: const ImageTheme(width: 22, height: 22, shape: Circle())))],
             value: settings.language,
             onChanged: (l) => ref.read(settingsProvider.notifier).setLanguage(l),
           ),
           const SizedBox(height: 24),
+          if (HomeWidgetService.supported) ...[
+            Card1(
+              radius: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              onTap: () => context.push('/settings/widgets'),
+              child: Row(
+                children: [
+                  Icon(SolarIconsOutline.widget, size: 20, color: c.textMuted),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(tr('Home screen widgets'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15))),
+                  Icon(SolarIconsOutline.altArrowRight, size: 18, color: c.textFaint),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
           Text(tr('About').toUpperCase(), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 10),
           Card1(
