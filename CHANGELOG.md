@@ -5,6 +5,8 @@ the section for a tag becomes the GitHub Release notes.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-18
+
 ### Added
 - Each home screen widget now has its own project and period (Today, 7 days or 30 days). Pick them when you add a widget, and change them later under App settings → Home screen widgets.
 - New Project card widget (4 × 1): the card from the home screen, with the logo, visitors today and the last seven days.
