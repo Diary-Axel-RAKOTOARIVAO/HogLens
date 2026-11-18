@@ -12,6 +12,7 @@ the section for a tag becomes the GitHub Release notes.
 - Tap the time on a widget to refresh it without opening the app. A widget that has not updated for 90 minutes is marked as stale.
 
 ### Changed
+- HogLens is open source under the MIT license. The source, downloads and Issues now live together at github.com/Diary-Axel-RAKOTOARIVAO/HogLens, and the separate hoglens-releases page is gone. "Check for updates" and the GitHub links in Settings use the new address; builds before this one still point at the old page and will not see updates.
 - Widgets have a richer look: an accent dot, tinted change pills and charts sized to the widget.
 - The language picker and the Worldwide country list use flag icons instead of emoji.
 
