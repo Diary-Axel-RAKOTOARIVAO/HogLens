@@ -14,8 +14,8 @@ import '../../data/providers/settings_provider.dart';
 import '../../home_widget/home_widget_service.dart';
 import '../../shared/ui.dart';
 
-/// Public releases repo (downloads and issues); the source repo is private.
-const _repoUrl = 'https://github.com/Diary-Axel-RAKOTOARIVAO/hoglens-releases';
+/// Source, downloads and issues.
+const _repoUrl = 'https://github.com/Diary-Axel-RAKOTOARIVAO/HogLens';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -175,7 +175,7 @@ class SettingsScreen extends ConsumerWidget {
           _LinkRow(
             icon: SolarIconsOutline.bug,
             title: tr('Report a problem'),
-            subtitle: 'github.com/Diary-Axel-RAKOTOARIVAO/hoglens-releases/issues',
+            subtitle: 'github.com/Diary-Axel-RAKOTOARIVAO/HogLens/issues',
             onTap: () => launchUrl(Uri.parse('$_repoUrl/issues/new'), mode: LaunchMode.externalApplication),
           ),
         ],
