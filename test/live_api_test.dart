@@ -97,7 +97,7 @@ void main() {
         final pt = await repo.paths(r);
         print('paths → ${pt.links.length} links, top ${pt.links.take(3).map((l) => '${l.fromStep}:${l.from}→${l.to}=${l.value}').join(' | ')}');
         final geo = await repo.countries(r);
-        print('geo → ${geo.countries.length} countries, top ${geo.countries.take(3).map((c) => '${c.flag} ${c.name} ${c.visitors}').join(', ')}');
+        print('geo → ${geo.countries.length} countries, top ${geo.countries.take(3).map((c) => '${c.code} ${c.name} ${c.visitors}').join(', ')}');
         expect(geo.countries, isNotEmpty);
       }, timeout: slow);
 
